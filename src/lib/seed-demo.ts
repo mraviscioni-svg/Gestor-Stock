@@ -1,6 +1,11 @@
 import bcrypt from "bcryptjs";
 import { PaymentMethod, Role, StockMovementReason } from "@prisma/client";
 import { prisma } from "./prisma";
+import {
+  DEMO_OWNER_EMAIL,
+  DEMO_OWNER_PASSWORD,
+  DEMO_TENANT_SLUG,
+} from "@/config/demo-auth-defaults";
 
 /**
  * Crea/actualiza tenant demo, usuario owner, categorías, productos y venta demo.
@@ -9,29 +14,19 @@ import { prisma } from "./prisma";
 export async function runDemoSeed(options?: { disconnect?: boolean }) {
   const shouldDisconnect = options?.disconnect ?? false;
 
-  const demoPassword = process.env.SEED_DEMO_PASSWORD;
-  if (!demoPassword || demoPassword.length < 8) {
-    throw new Error(
-      "SEED_DEMO_PASSWORD must be set and be at least 8 characters before running seed."
-    );
-  }
-
-  const tenantSlug = "demo-kiosco";
-  const ownerEmail = process.env.SEED_DEMO_OWNER_EMAIL ?? "owner@demo.kiosco.local";
-
-  const passwordHash = await bcrypt.hash(demoPassword, 12);
+  const passwordHash = await bcrypt.hash(DEMO_OWNER_PASSWORD, 12);
 
   const tenant = await prisma.tenant.upsert({
-    where: { slug: tenantSlug },
+    where: { slug: DEMO_TENANT_SLUG },
     update: { name: "Tienda demo — Gestor de Stock" },
     create: {
       name: "Tienda demo — Gestor de Stock",
-      slug: tenantSlug,
+      slug: DEMO_TENANT_SLUG,
     },
   });
 
   const owner = await prisma.user.upsert({
-    where: { email: ownerEmail },
+    where: { email: DEMO_OWNER_EMAIL },
     update: {
       passwordHash,
       role: Role.OWNER,
@@ -39,7 +34,7 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
       name: "Dueño Demo",
     },
     create: {
-      email: ownerEmail,
+      email: DEMO_OWNER_EMAIL,
       passwordHash,
       role: Role.OWNER,
       tenantId: tenant.id,

@@ -13,22 +13,21 @@
 | `JWT_SECRET` | Todos | Secreto largo (≥16). Distinto por ambiente en ideal. |
 | `NEXT_PUBLIC_APP_ENV` | Production = `production`, Preview = `preprod` | Etiqueta visible en panel / logs de alto nivel. |
 | `NEXT_PUBLIC_APP_URL` | Production = URL canónica (`https://...`) | Útil para links absolutos futuros. |
-| `NEXT_PUBLIC_DEMO_LOGIN_HINT` | Preview opcional | Texto de ayuda en login (sin secretos). |
+| `NEXT_PUBLIC_DEMO_LOGIN_HINT` | Opcional | Texto extra en login (sin secretos). |
+| `BOOTSTRAP_SECRET` | Opcional (solo para primer seed vía API) | Ver README; borrar tras usar. |
 
-> **No** configures `SEED_DEMO_PASSWORD` en Vercel salvo que ejecutes seed desde CI contra esa DB (no recomendado en producción).
+Las credenciales del usuario demo están en **`src/config/demo-auth-defaults.ts`** y en la DB (hash); **no** van en variables de entorno.
 
 ## Build
 
-El script `build` ejecuta `prisma generate` antes de `next build` para asegurar el client en CI/Vercel.
+El script `build` ejecuta `prisma generate`, `prisma db push` y `next build` (tablas alineadas con el schema en cada deploy).
 
-## Migraciones
+## Migraciones / datos
 
-En el primer deploy:
+En el primer deploy, `db push` en el build crea tablas. Para datos demo:
 
-1. Desde tu máquina (o CI) con `DATABASE_URL` apuntando al entorno remoto:  
-   `npx prisma migrate deploy`  
-   o, en MVP inicial, `npx prisma db push` si aún no versionás migraciones.
-2. Seed solo en entornos de demo: `npm run db:seed` con variables de seed locales.
+1. Llamá una vez a `POST /api/internal/bootstrap` con `BOOTSTRAP_SECRET` (ver README), **o**
+2. Desde tu máquina: `npm run db:seed` (usa las mismas credenciales por defecto del archivo `demo-auth-defaults.ts`).
 
 ## Límites típicos (Hobby) a tener en cuenta
 

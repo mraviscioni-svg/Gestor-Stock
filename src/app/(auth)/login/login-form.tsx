@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, LockKeyhole } from "lucide-react";
+import { DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD } from "@/config/demo-auth-defaults";
 
 export function LoginForm() {
   const router = useRouter();
@@ -13,6 +14,10 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setEmail(DEMO_OWNER_EMAIL);
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -80,6 +85,12 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
+          <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700 ring-1 ring-slate-200">
+            <span className="font-semibold text-slate-800">Demo:</span> usuario y clave por defecto
+            están en el código y en la DB tras el seed. Email{" "}
+            <span className="font-mono text-slate-900">{DEMO_OWNER_EMAIL}</span> · clave{" "}
+            <span className="font-mono text-slate-900">{DEMO_OWNER_PASSWORD}</span>
+          </p>
           {demoHint ? (
             <p className="rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-900 ring-1 ring-sky-100">
               {demoHint}

@@ -44,8 +44,8 @@ Completá al menos:
 
 - `DATABASE_URL` (Postgres)  
 - `JWT_SECRET` (≥16 caracteres aleatorios)  
-- `SEED_DEMO_PASSWORD` (≥8 caracteres) para poder correr el seed  
-- `SEED_DEMO_OWNER_EMAIL` (opcional; por defecto `owner@demo.kiosco.local`)
+
+Las credenciales del usuario demo **no** van en `.env`: están en `src/config/demo-auth-defaults.ts` y se guardan hasheadas en la DB al correr `npm run db:seed`.
 
 3. **Prisma: migraciones**
 
@@ -67,7 +67,7 @@ npm run db:seed
 npm run dev
 ```
 
-Abrí `http://localhost:3000`, iniciá sesión en `/login` con el email de seed y la contraseña definida en `SEED_DEMO_PASSWORD`.
+Abrí `http://localhost:3000`, ejecutá el seed y entrá en `/login` con el **usuario y clave por defecto** (ver sección *Credenciales demo* abajo).
 
 ### Variables públicas opcionales
 
@@ -95,6 +95,12 @@ git remote set-url origin https://github.com/mraviscioni-svg/<NUEVO-NOMBRE>.git
 
 En **Settings → General** podés usar la **Description** con el texto legible *Gestor de Stock* (admite espacios).
 
+### Credenciales demo (en la DB, no en `.env`)
+
+Definidas en código en [`src/config/demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts). Tras `npm run db:seed` o `POST /api/internal/bootstrap`, el login usa ese email y contraseña; en la base solo existe el **hash** de la clave.
+
+Para cambiar el demo, editá ese archivo y volvé a ejecutar seed/bootstrap.
+
 ## Deploy en Vercel + GitHub
 
 1. Subí el código a GitHub (repo en la raíz del proyecto).  
@@ -105,9 +111,7 @@ En **Settings → General** podés usar la **Description** con el texto legible 
 |----------|-------------|--------|
 | `DATABASE_URL` | Sí | Neon pooled / Supabase |
 | `JWT_SECRET` | Sí | ≥16 caracteres |
-| `SEED_DEMO_PASSWORD` | Sí para poder entrar | ≥8 caracteres: será la **contraseña de login** del usuario demo |
-| `SEED_DEMO_OWNER_EMAIL` | No | Default `owner@demo.kiosco.local` |
-| `BOOTSTRAP_SECRET` | Solo una vez | ≥16 caracteres aleatorios; ver sección siguiente |
+| `BOOTSTRAP_SECRET` | Solo para bootstrap vía API | ≥16 caracteres; borrálo después de usar |
 | `NEXT_PUBLIC_*` | Recomendado | `APP_ENV`, `APP_URL`, opcional `DEMO_LOGIN_HINT` |
 
 4. **Deploy.** El comando de build ejecuta `prisma db push` y crea/actualiza tablas en Neon automáticamente.
@@ -115,7 +119,7 @@ En **Settings → General** podés usar la **Description** con el texto legible 
 5. **Cargar datos demo (usuario + productos)** — elegí **una** opción:
 
 **A) Desde Vercel (sin PC)**  
-- Con `BOOTSTRAP_SECRET` y `SEED_DEMO_PASSWORD` ya definidos en Vercel, llamá **una sola vez**:
+- Con `BOOTSTRAP_SECRET` definido en Vercel, llamá **una sola vez**:
 
 ```bash
 curl -X POST "https://TU-DOMINIO.vercel.app/api/internal/bootstrap" ^
@@ -124,7 +128,7 @@ curl -X POST "https://TU-DOMINIO.vercel.app/api/internal/bootstrap" ^
 
 (PowerShell también podés usar `Invoke-WebRequest -Method POST -Headers @{ "x-bootstrap-secret" = "..." } -Uri "..."`.)
 
-- Respuesta JSON: `ownerEmail` = usuario para `/login`, contraseña = `SEED_DEMO_PASSWORD`.  
+- Respuesta JSON: `ownerEmail` coincide con [`demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts); la contraseña es la misma que figura ahí (y en pantalla de login).  
 - **Importante:** borrá `BOOTSTRAP_SECRET` de Vercel (o cambiálo) después de usarlo.
 
 **B) Desde tu máquina**  
@@ -134,7 +138,7 @@ npm run db:seed
 ```
 (con `DATABASE_URL` apuntando a la misma base que Vercel).
 
-6. Iniciá sesión en `/login` con el email del seed y `SEED_DEMO_PASSWORD`.
+6. Iniciá sesión en `/login` con las credenciales demo (archivo `src/config/demo-auth-defaults.ts` o texto en la propia pantalla de login).
 
 Documentación ampliada: `docs/deployment-vercel.md`.
 

@@ -24,7 +24,8 @@ export async function POST(req: Request) {
     const email = out.ownerEmail;
     return NextResponse.json({
       ok: true,
-      message: "Seed aplicado. Podés iniciar sesión con el email del owner y SEED_DEMO_PASSWORD.",
+      message:
+        "Seed aplicado. Iniciá sesión con las credenciales demo (email y clave en src/config/demo-auth-defaults.ts y en pantalla de login).",
       ownerEmail: email,
     });
   } catch (e) {
