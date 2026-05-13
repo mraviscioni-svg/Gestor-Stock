@@ -20,8 +20,8 @@ La app es un monolito **Next.js (App Router)** desplegable en **Vercel**: UI en 
 
 ## Autenticación (MVP)
 
-- **JWT firmado (jose)** en cookie `httpOnly` (`kiosco_session`).  
-- **Middleware** protege rutas de panel.  
+- **JWT firmado (jose)** en cookie `httpOnly` (`kiosco_session`). El código de tokens (`src/lib/auth/token.ts`) está separado de la lectura con `cookies()` (`src/lib/auth/server.ts`) para que el **middleware Edge** no arrastre `next/headers` de forma indirecta.
+- **Middleware** protege rutas de panel usando solo verificación de JWT.
 - Las **APIs** vuelven a validar sesión en servidor (`requireSession`) y derivan `tenantId` del token, no del body.
 
 ## Multi-tenant

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { SESSION_COOKIE, signSessionToken } from "@/lib/auth";
+import { SESSION_COOKIE, signSessionToken } from "@/lib/auth/token";
 import { loginSchema } from "@/lib/validations";
 import { userRepository } from "@/repositories/user.repository";
 import { jsonError } from "@/lib/http";

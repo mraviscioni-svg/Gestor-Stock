@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, Boxes, CreditCard, Shield } from "lucide-react";
-import { getSessionFromCookies } from "@/lib/auth";
+import { getSessionFromCookies } from "@/lib/auth/server";
 import { dashboardService } from "@/services/dashboard.service";
 
 const money = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });

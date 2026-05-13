@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth/server";
 import { getTenantIdForRequest } from "@/lib/tenant";
 import { categoryRepository } from "@/repositories/category.repository";
 import { handleRouteError } from "@/lib/http";

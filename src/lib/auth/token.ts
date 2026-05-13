@@ -1,6 +1,5 @@
 import { Role } from "@prisma/client";
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
 import type { SessionUser } from "@/types";
 
 export const SESSION_COOKIE = "kiosco_session";
@@ -39,30 +38,5 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
     return { userId, tenantId, role: role as Role };
   } catch {
     return null;
-  }
-}
-
-export async function getSessionFromCookies(): Promise<SessionUser | null> {
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-  if (!token) return null;
-  return verifySessionToken(token);
-}
-
-export async function requireSession(): Promise<SessionUser> {
-  const session = await getSessionFromCookies();
-  if (!session) {
-    throw new AuthError("UNAUTHORIZED", 401);
-  }
-  return session;
-}
-
-export class AuthError extends Error {
-  constructor(
-    message: string,
-    public status: number = 400
-  ) {
-    super(message);
-    this.name = "AuthError";
   }
 }

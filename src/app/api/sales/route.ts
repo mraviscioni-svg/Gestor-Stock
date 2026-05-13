@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth/server";
 import { getTenantIdForRequest } from "@/lib/tenant";
 import { saleCreateSchema } from "@/lib/validations";
 import { saleRepository, mapSaleToDTO } from "@/repositories/sale.repository";

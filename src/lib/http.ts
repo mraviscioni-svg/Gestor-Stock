@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AuthError } from "@/lib/auth";
+import { AuthError } from "@/lib/errors";
 import { TenantScopeError } from "@/lib/tenant";
 import { DomainError } from "@/lib/errors";
 
