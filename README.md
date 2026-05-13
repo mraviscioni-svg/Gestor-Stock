@@ -99,20 +99,49 @@ En **Settings → General** podés usar la **Description** con el texto legible 
 
 1. Subí el código a GitHub (repo en la raíz del proyecto).  
 2. En Vercel: **New Project** → importá el repo → Framework: Next.js.  
-3. Configurá **Environment Variables** (`DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_*`).  
-4. Tras el primer deploy, ejecutá migraciones contra la DB remota desde tu máquina o CI:
+3. Configurá **Environment Variables** (Production y Preview según corresponda):
+
+| Variable | Obligatoria | Notas |
+|----------|-------------|--------|
+| `DATABASE_URL` | Sí | Neon pooled / Supabase |
+| `JWT_SECRET` | Sí | ≥16 caracteres |
+| `SEED_DEMO_PASSWORD` | Sí para poder entrar | ≥8 caracteres: será la **contraseña de login** del usuario demo |
+| `SEED_DEMO_OWNER_EMAIL` | No | Default `owner@demo.kiosco.local` |
+| `BOOTSTRAP_SECRET` | Solo una vez | ≥16 caracteres aleatorios; ver sección siguiente |
+| `NEXT_PUBLIC_*` | Recomendado | `APP_ENV`, `APP_URL`, opcional `DEMO_LOGIN_HINT` |
+
+4. **Deploy.** El comando de build ejecuta `prisma db push` y crea/actualiza tablas en Neon automáticamente.
+
+5. **Cargar datos demo (usuario + productos)** — elegí **una** opción:
+
+**A) Desde Vercel (sin PC)**  
+- Con `BOOTSTRAP_SECRET` y `SEED_DEMO_PASSWORD` ya definidos en Vercel, llamá **una sola vez**:
 
 ```bash
-npx prisma migrate deploy
+curl -X POST "https://TU-DOMINIO.vercel.app/api/internal/bootstrap" ^
+  -H "x-bootstrap-secret: EL_MISMO_BOOTSTRAP_SECRET"
 ```
 
-5. (Solo entornos demo) ejecutá seed apuntando a esa base, con cuidado.
+(PowerShell también podés usar `Invoke-WebRequest -Method POST -Headers @{ "x-bootstrap-secret" = "..." } -Uri "..."`.)
+
+- Respuesta JSON: `ownerEmail` = usuario para `/login`, contraseña = `SEED_DEMO_PASSWORD`.  
+- **Importante:** borrá `BOOTSTRAP_SECRET` de Vercel (o cambiálo) después de usarlo.
+
+**B) Desde tu máquina**  
+```bash
+npx prisma db push
+npm run db:seed
+```
+(con `DATABASE_URL` apuntando a la misma base que Vercel).
+
+6. Iniciá sesión en `/login` con el email del seed y `SEED_DEMO_PASSWORD`.
 
 Documentación ampliada: `docs/deployment-vercel.md`.
 
 ## Endpoints API (MVP)
 
 - `GET /api/health` — health simple  
+- `POST /api/internal/bootstrap` — seed demo protegido por header `x-bootstrap-secret` (ver arriba)  
 - `GET/POST /api/products` — listado/creación (tenant desde sesión)  
 - `PUT /api/products/:id` — actualización / desactivación (`active: false`)  
 - `GET /api/products/barcode/:barcode` — lookup para venta  
@@ -136,7 +165,7 @@ La lógica vive en `src/services` y `src/repositories`. Los route handlers son d
 | Script | Descripción |
 |--------|-------------|
 | `npm run dev` | Next en desarrollo |
-| `npm run build` | `prisma generate` + `next build` |
+| `npm run build` | `prisma generate` + `prisma db push` + `next build` |
 | `npm run start` | Servidor producción |
 | `npm run db:migrate` | `prisma migrate dev` |
 | `npm run db:push` | `prisma db push` |
