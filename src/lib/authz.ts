@@ -33,7 +33,7 @@ export function canViewLiveManager(role: Role): boolean {
 }
 
 export function canViewAllSalesInTenant(role: Role): boolean {
-  return [Role.ADMIN, Role.OWNER, Role.VIEWER, Role.SUPER_ADMIN].includes(role);
+  return LIVE_MANAGER_ROLES.includes(role);
 }
 
 export function canManageOthersSales(role: Role): boolean {
