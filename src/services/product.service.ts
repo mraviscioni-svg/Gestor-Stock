@@ -51,7 +51,7 @@ export const productService = {
       return mapProductToDTO(created);
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-        throw new DomainError("El código de barras ya existe en este kiosco", "BARCODE_DUPLICATE");
+        throw new DomainError("El código de barras ya existe en este comercio", "BARCODE_DUPLICATE");
       }
       throw e;
     }
@@ -96,7 +96,7 @@ export const productService = {
       return mapProductToDTO(updated);
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
-        throw new DomainError("El código de barras ya existe en este kiosco", "BARCODE_DUPLICATE");
+        throw new DomainError("El código de barras ya existe en este comercio", "BARCODE_DUPLICATE");
       }
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
         throw new DomainError("Producto no encontrado", "NOT_FOUND");

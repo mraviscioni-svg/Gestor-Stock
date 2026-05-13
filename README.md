@@ -1,6 +1,6 @@
-# Kiosco SaaS (MVP)
+# Gestor de Stock (MVP)
 
-SaaS **multi-tenant** para gestión de **kioscos**: catálogo, venta rápida con lector tipo teclado (HID), stock y panel operativo. Pensado para **Vercel Hobby** + **PostgreSQL** externo (**Neon** o **Supabase**) y **Prisma ORM**.
+SaaS **multi-tenant** para **catálogo, ventas y stock**: lector de código de barras tipo teclado (HID), ajustes de inventario y panel operativo. Pensado para **Vercel Hobby** + **PostgreSQL** externo (**Neon** o **Supabase**) y **Prisma ORM**.
 
 ## Stack
 
@@ -30,7 +30,7 @@ SaaS **multi-tenant** para gestión de **kioscos**: catálogo, venta rápida con
 1. **Instalar dependencias**
 
 ```bash
-cd kiosco-saas
+cd gestor-de-stock
 npm install
 ```
 
@@ -83,9 +83,22 @@ Abrí `http://localhost:3000`, iniciá sesión en `/login` con el email de seed 
 
 No usa cámara ni permisos del navegador: el lector **simula teclado**. En **Ventas**, el campo de escaneo está siempre enfocable; al recibir **Enter**, se busca el producto por barcode vía API y se agrega al carrito. Ver `src/components/BarcodeInput.tsx`.
 
+## Nombre del repositorio en GitHub
+
+En GitHub el **nombre del repo** (la parte de la URL) **no puede llevar espacios**. Para “Gestor de Stock” lo habitual es usar el slug **`gestor-de-stock`** (URL: `https://github.com/mraviscioni-svg/gestor-de-stock`).
+
+1. En GitHub: **Settings** del repo → **General** → **Repository name** → escribí `gestor-de-stock` → **Rename**.  
+2. En tu máquina, actualizá el remoto:
+
+```bash
+git remote set-url origin https://github.com/mraviscioni-svg/gestor-de-stock.git
+```
+
+3. Opcional: en **Settings → General** podés completar el campo **Description** con el texto legible *Gestor de Stock* (eso sí admite espacios).
+
 ## Deploy en Vercel + GitHub
 
-1. Subí el repo a GitHub (`kiosco-saas` como raíz del repo o monorepo con root correcto).  
+1. Subí el código a GitHub (repo en la raíz del proyecto).  
 2. En Vercel: **New Project** → importá el repo → Framework: Next.js.  
 3. Configurá **Environment Variables** (`DATABASE_URL`, `JWT_SECRET`, `NEXT_PUBLIC_*`).  
 4. Tras el primer deploy, ejecutá migraciones contra la DB remota desde tu máquina o CI:

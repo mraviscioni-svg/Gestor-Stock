@@ -38,7 +38,7 @@ En el primer deploy:
 
 ## GitHub → Vercel
 
-1. Import Project → seleccioná el repo `kiosco-saas`.  
+1. Import Project → seleccioná el repo (p. ej. `gestor-de-stock` en GitHub).  
 2. Framework Preset: Next.js.  
 3. Root directory: `/` (si el repo es solo este proyecto).  
 4. Asigná variables por ambiente (Production vs Preview).  

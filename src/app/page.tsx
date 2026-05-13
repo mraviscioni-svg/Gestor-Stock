@@ -12,7 +12,7 @@ export default function HomePage() {
               <Sparkles className="h-5 w-5 text-sky-200" />
             </div>
             <div>
-              <p className="text-sm font-semibold tracking-wide text-sky-100/90">Kiosco SaaS</p>
+              <p className="text-sm font-semibold tracking-wide text-sky-100/90">Gestor de Stock</p>
               <p className="text-xs text-slate-300">Operaciones claras. Crecimiento sin fricción.</p>
             </div>
           </div>
@@ -32,7 +32,7 @@ export default function HomePage() {
               Multi-tenant desde el día uno
             </div>
             <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-              Tu kiosco, con la solidez de un producto SaaS real.
+              Tu negocio, con la solidez de un producto SaaS real.
             </h1>
             <p className="max-w-xl text-pretty text-base leading-relaxed text-slate-200/90">
               Venta rápida con lector tipo teclado, stock confiable y paneles listos para mostrar al

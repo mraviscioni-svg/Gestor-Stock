@@ -38,7 +38,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <Sparkles className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-sm font-semibold text-slate-900">Kiosco SaaS</span>
+              <span className="block text-sm font-semibold text-slate-900">Gestor de Stock</span>
               <span className="block text-xs text-slate-500">Panel operativo</span>
             </span>
           </Link>
@@ -78,7 +78,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <div className="min-h-screen">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/80 px-4 py-3 backdrop-blur lg:hidden">
-          <p className="text-sm font-semibold text-slate-900">Kiosco</p>
+          <p className="text-sm font-semibold text-slate-900">Gestor</p>
           <button
             type="button"
             onClick={logout}
