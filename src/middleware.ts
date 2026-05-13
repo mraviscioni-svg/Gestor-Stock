@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/token";
 
-const prefixes = ["/dashboard", "/products", "/sales", "/stock"];
+const prefixes = ["/dashboard", "/products", "/sales", "/stock", "/settings"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -24,5 +24,15 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/products", "/sales", "/stock"],
+  matcher: [
+    "/dashboard/:path*",
+    "/products/:path*",
+    "/products",
+    "/sales/:path*",
+    "/sales",
+    "/stock/:path*",
+    "/stock",
+    "/settings",
+    "/settings/:path*",
+  ],
 };

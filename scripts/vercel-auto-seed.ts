@@ -6,6 +6,7 @@
  */
 import { execSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
+import { DEMO_TENANT_SLUG } from "../src/config/demo-auth-defaults";
 
 const DEMO_EMAILS = ["owner@demo.gestor.stock", "owner@demo.kiosco.local"];
 
@@ -19,7 +20,10 @@ async function main() {
   const prisma = new PrismaClient();
   try {
     const n = await prisma.user.count({
-      where: { email: { in: DEMO_EMAILS } },
+      where: {
+        tenant: { slug: DEMO_TENANT_SLUG },
+        email: { in: DEMO_EMAILS },
+      },
     });
     if (n > 0) {
       // eslint-disable-next-line no-console

@@ -73,7 +73,7 @@ export const productService = {
   ) {
     const existing = await productRepository.findById(tenantId, id);
     if (!existing) {
-      throw new DomainError("Producto no encontrado", "NOT_FOUND");
+      throw new DomainError("Producto no encontrado", "NOT_FOUND", 404);
     }
     if (input.categoryId) {
       const categories = await categoryRepository.listByTenant(tenantId);
@@ -99,7 +99,7 @@ export const productService = {
         throw new DomainError("El código de barras ya existe en este comercio", "BARCODE_DUPLICATE");
       }
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
-        throw new DomainError("Producto no encontrado", "NOT_FOUND");
+        throw new DomainError("Producto no encontrado", "NOT_FOUND", 404);
       }
       throw e;
     }

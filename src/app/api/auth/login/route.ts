@@ -9,22 +9,80 @@ import {
   LEGACY_DEMO_OWNER_EMAIL,
 } from "@/config/demo-auth-defaults";
 
+type LoginUser = Awaited<ReturnType<typeof userRepository.findLoginCandidatesByEmail>>[number];
+
+function dedupeById(users: LoginUser[]) {
+  const map = new Map<string, LoginUser>();
+  for (const u of users) map.set(u.id, u);
+  return [...map.values()];
+}
+
+async function resolveLoginCandidates(email: string) {
+  const primary = await userRepository.findLoginCandidatesByEmail(email);
+  let merged = dedupeById(primary);
+  if (email === DEMO_OWNER_EMAIL.toLowerCase()) {
+    const legacy = await userRepository.findLoginCandidatesByEmail(LEGACY_DEMO_OWNER_EMAIL.toLowerCase());
+    merged = dedupeById([...merged, ...legacy]);
+  }
+  return merged.filter((u) => u.tenantId && u.tenant);
+}
+
+function tenantChoices(users: LoginUser[]) {
+  const seen = new Set<string>();
+  const out: { slug: string; name: string }[] = [];
+  for (const u of users) {
+    const t = u.tenant;
+    if (!t || seen.has(t.slug)) continue;
+    seen.add(t.slug);
+    out.push({ slug: t.slug, name: t.name });
+  }
+  return out;
+}
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
     return jsonError("Credenciales inválidas", 400);
   }
-  const { email: rawEmail, password } = parsed.data;
+  const { email: rawEmail, password, tenantSlug: rawSlug } = parsed.data;
   const email = rawEmail.trim().toLowerCase();
+  const tenantSlug =
+    typeof rawSlug === "string" && rawSlug.trim() ? rawSlug.trim().toLowerCase() : undefined;
 
-  let user = await userRepository.findByEmail(email);
-  if (!user && email === DEMO_OWNER_EMAIL.toLowerCase()) {
-    user = await userRepository.findByEmail(LEGACY_DEMO_OWNER_EMAIL);
-  }
+  const candidates = await resolveLoginCandidates(email);
 
   const isDemoEmail =
     email === DEMO_OWNER_EMAIL.toLowerCase() || email === LEGACY_DEMO_OWNER_EMAIL.toLowerCase();
+
+  let user: LoginUser | null = null;
+  if (tenantSlug) {
+    user = candidates.find((u) => u.tenant!.slug === tenantSlug) ?? null;
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: "No hay usuario con ese email en el comercio indicado.",
+          ...(isDemoEmail
+            ? {
+                hint: `Slug del tenant demo: revisá src/config/demo-auth-defaults.ts (DEMO_TENANT_SLUG).`,
+              }
+            : {}),
+        },
+        { status: 401 }
+      );
+    }
+  } else if (candidates.length === 1) {
+    user = candidates[0]!;
+  } else if (candidates.length > 1) {
+    return NextResponse.json(
+      {
+        error: "Ese email está en más de un comercio. Indicá el slug del comercio.",
+        code: "TENANT_SLUG_REQUIRED",
+        tenants: tenantChoices(candidates),
+      },
+      { status: 400 }
+    );
+  }
 
   if (!user || !user.tenantId) {
     return NextResponse.json(
@@ -38,6 +96,9 @@ export async function POST(req: Request) {
       },
       { status: 401 }
     );
+  }
+  if (!user.active) {
+    return jsonError("Cuenta desactivada. Contactá al administrador del comercio.", 403);
   }
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {

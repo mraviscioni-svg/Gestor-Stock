@@ -26,8 +26,12 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
     },
   });
 
-  const ownerWithCanonical = await prisma.user.findUnique({ where: { email: DEMO_OWNER_EMAIL } });
-  const ownerWithLegacy = await prisma.user.findUnique({ where: { email: LEGACY_DEMO_OWNER_EMAIL } });
+  const ownerWithCanonical = await prisma.user.findUnique({
+    where: { tenantId_email: { tenantId: tenant.id, email: DEMO_OWNER_EMAIL } },
+  });
+  const ownerWithLegacy = await prisma.user.findUnique({
+    where: { tenantId_email: { tenantId: tenant.id, email: LEGACY_DEMO_OWNER_EMAIL } },
+  });
   if (ownerWithLegacy && !ownerWithCanonical) {
     await prisma.user.update({
       where: { id: ownerWithLegacy.id },
@@ -36,12 +40,13 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
   }
 
   const owner = await prisma.user.upsert({
-    where: { email: DEMO_OWNER_EMAIL },
+    where: { tenantId_email: { tenantId: tenant.id, email: DEMO_OWNER_EMAIL } },
     update: {
       passwordHash,
       role: Role.OWNER,
       tenantId: tenant.id,
       name: "Dueño Demo",
+      active: true,
     },
     create: {
       email: DEMO_OWNER_EMAIL,
@@ -49,6 +54,7 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
       role: Role.OWNER,
       tenantId: tenant.id,
       name: "Dueño Demo",
+      active: true,
     },
   });
 

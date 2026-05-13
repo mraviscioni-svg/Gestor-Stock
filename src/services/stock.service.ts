@@ -23,7 +23,7 @@ export const stockService = {
         where: { id: input.productId, tenantId, active: true },
       });
       if (!product) {
-        throw new DomainError("Producto no encontrado", "NOT_FOUND");
+        throw new DomainError("Producto no encontrado", "NOT_FOUND", 404);
       }
       const next = product.stock + input.delta;
       if (next < 0) {

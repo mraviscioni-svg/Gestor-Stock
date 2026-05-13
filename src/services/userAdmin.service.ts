@@ -1,0 +1,128 @@
+import bcrypt from "bcryptjs";
+import { Role } from "@prisma/client";
+import { assertActorCanAssignRole, requireTenantManager } from "@/lib/authz";
+import { DomainError } from "@/lib/errors";
+import { userRepository } from "@/repositories/user.repository";
+import type { SessionUser } from "@/types";
+
+function toRole(r: "OWNER" | "ADMIN" | "CASHIER" | "VIEWER"): Role {
+  return Role[r];
+}
+
+function serializeUser(u: {
+  id: string;
+  email: string;
+  name: string | null;
+  role: Role;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: u.role,
+    active: u.active,
+    createdAt: u.createdAt.toISOString(),
+    updatedAt: u.updatedAt.toISOString(),
+  };
+}
+
+export const userAdminService = {
+  async list(tenantId: string) {
+    const rows = await userRepository.listByTenant(tenantId);
+    return rows.map((u) => serializeUser(u));
+  },
+
+  async create(
+    session: SessionUser,
+    input: {
+      email: string;
+      password: string;
+      name?: string | null;
+      role: "OWNER" | "ADMIN" | "CASHIER" | "VIEWER";
+    }
+  ) {
+    requireTenantManager(session);
+    const role = toRole(input.role);
+    assertActorCanAssignRole(session.role, role);
+    const email = input.email;
+    const existing = await userRepository.findByTenantAndEmail(session.tenantId, email);
+    if (existing) {
+      throw new DomainError("Ese email ya está registrado", "EMAIL_TAKEN");
+    }
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    const name =
+      input.name === undefined || input.name === null
+        ? null
+        : input.name.trim() || null;
+    const created = await userRepository.create({
+      tenantId: session.tenantId,
+      email,
+      passwordHash,
+      name,
+      role,
+      active: true,
+    });
+    return serializeUser(created);
+  },
+
+  async update(
+    session: SessionUser,
+    userId: string,
+    input: {
+      name?: string | null;
+      role?: "OWNER" | "ADMIN" | "CASHIER" | "VIEWER";
+      active?: boolean;
+    }
+  ) {
+    requireTenantManager(session);
+    const target = await userRepository.findByIdInTenant(session.tenantId, userId);
+    if (!target) {
+      throw new DomainError("Usuario no encontrado", "NOT_FOUND", 404);
+    }
+
+    if (input.role !== undefined) {
+      const newRole = toRole(input.role);
+      assertActorCanAssignRole(session.role, newRole);
+      if (target.role === Role.OWNER && newRole !== Role.OWNER) {
+        const owners = await userRepository.countActiveOwnersInTenant(session.tenantId);
+        if (owners <= 1) {
+          throw new DomainError("Tiene que haber al menos un dueño activo", "LAST_OWNER");
+        }
+      }
+    }
+
+    if (input.active === false) {
+      if (target.id === session.userId) {
+        throw new DomainError("No podés desactivarte a vos mismo", "SELF_DEACTIVATE");
+      }
+      if (target.role === Role.OWNER && target.active) {
+        const owners = await userRepository.countActiveOwnersInTenant(session.tenantId);
+        if (owners <= 1) {
+          throw new DomainError("No podés desactivar al único dueño activo", "LAST_OWNER");
+        }
+      }
+    }
+
+    const name =
+      input.name === undefined
+        ? undefined
+        : input.name === null
+          ? null
+          : input.name.trim() || null;
+    const role = input.role === undefined ? undefined : toRole(input.role);
+    const active = input.active;
+
+    const updated = await userRepository.updateInTenant(session.tenantId, userId, {
+      ...(name !== undefined && { name }),
+      ...(role !== undefined && { role }),
+      ...(active !== undefined && { active }),
+    });
+    if (!updated) {
+      throw new DomainError("Usuario no encontrado", "NOT_FOUND", 404);
+    }
+    return serializeUser(updated);
+  },
+};

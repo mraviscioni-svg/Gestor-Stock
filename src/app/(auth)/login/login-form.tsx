@@ -4,39 +4,56 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, LockKeyhole } from "lucide-react";
-import { DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD } from "@/config/demo-auth-defaults";
+import { DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD, DEMO_TENANT_SLUG } from "@/config/demo-auth-defaults";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const reason = searchParams.get("reason");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [tenantSlug, setTenantSlug] = useState("");
+  const [slugChoices, setSlugChoices] = useState<{ slug: string; name: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setEmail(DEMO_OWNER_EMAIL);
+    setTenantSlug(DEMO_TENANT_SLUG);
   }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const slugTrim = tenantSlug.trim();
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({
+        email,
+        password,
+        ...(slugTrim ? { tenantSlug: slugTrim } : {}),
+      }),
     });
     const data = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
+      if (res.status === 400 && data.code === "TENANT_SLUG_REQUIRED" && Array.isArray(data.tenants)) {
+        setSlugChoices(data.tenants);
+        const base =
+          typeof data.error === "string" ? data.error : "Indicá en qué comercio querés entrar";
+        setError(`${base}\n\nElegí el slug abajo o escribilo en el campo "Comercio (slug)".`);
+        return;
+      }
       const base =
         typeof data.error === "string" ? data.error : "No se pudo iniciar sesión";
       const hint = typeof data.hint === "string" ? data.hint : null;
       setError(hint ? `${base}\n\n${hint}` : base);
       return;
     }
+    setSlugChoices(null);
     router.push(next);
     router.refresh();
   }
@@ -57,6 +74,11 @@ export function LoginForm() {
         </div>
 
         <form className="mt-8 space-y-4" onSubmit={onSubmit}>
+          {reason === "inactive" ? (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-100">
+              Tu cuenta fue desactivada. Pedile a un dueño o administrador del comercio que la reactive.
+            </p>
+          ) : null}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Email
@@ -70,6 +92,41 @@ export function LoginForm() {
               required
             />
           </div>
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Comercio (slug)
+            </label>
+            <input
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
+              type="text"
+              autoComplete="organization"
+              placeholder={DEMO_TENANT_SLUG}
+              value={tenantSlug}
+              onChange={(e) => setTenantSlug(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Si el mismo email existe en varios comercios, el servidor te pedirá el slug. En demo viene
+              rellenado.
+            </p>
+          </div>
+          {slugChoices && slugChoices.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {slugChoices.map((t) => (
+                <button
+                  key={t.slug}
+                  type="button"
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-800 shadow-sm hover:border-sky-300 hover:bg-sky-50"
+                  onClick={() => {
+                    setTenantSlug(t.slug);
+                    setSlugChoices(null);
+                  }}
+                >
+                  <span className="font-mono text-sky-800">{t.slug}</span>
+                  <span className="block text-slate-500">{t.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Contraseña

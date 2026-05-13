@@ -37,4 +37,25 @@ export const stockAdjustSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  /** Slug del comercio si el mismo email existe en más de un tenant. */
+  tenantSlug: z.string().max(80).optional(),
+});
+
+const tenantRoleEnum = z.enum(["OWNER", "ADMIN", "CASHIER", "VIEWER"]);
+
+export const tenantUpdateSchema = z.object({
+  name: z.string().min(1).max(120).trim(),
+});
+
+export const userCreateSchema = z.object({
+  email: z.string().email().transform((e) => e.trim().toLowerCase()),
+  password: z.string().min(8).max(128),
+  name: z.string().max(120).optional().nullable(),
+  role: tenantRoleEnum.default("CASHIER"),
+});
+
+export const userUpdateSchema = z.object({
+  name: z.string().max(120).optional().nullable(),
+  role: tenantRoleEnum.optional(),
+  active: z.boolean().optional(),
 });
