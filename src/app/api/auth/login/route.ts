@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError("Credenciales inválidas", 400);
   }
-  const { email: rawEmail, password, tenantSlug: rawSlug } = parsed.data;
+  const { email: rawEmail, password, tenantSlug: rawSlug, platformOnly } = parsed.data;
   const email = rawEmail.trim().toLowerCase();
   const tenantSlug =
     typeof rawSlug === "string" && rawSlug.trim() ? rawSlug.trim().toLowerCase() : undefined;
@@ -49,7 +49,13 @@ export async function POST(req: Request) {
   if (platformAdmin) {
     const ok = await bcrypt.compare(password, platformAdmin.passwordHash);
     if (!ok) {
-      return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Contraseña incorrecta para el administrador de plataforma.",
+          code: "PLATFORM_AUTH_FAILED",
+        },
+        { status: 401 }
+      );
     }
     if (!platformAdmin.active) {
       return jsonError("Cuenta desactivada.", 403);
@@ -92,6 +98,17 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
     });
     return res;
+  }
+
+  if (platformOnly) {
+    return NextResponse.json(
+      {
+        error: "No existe un administrador de plataforma con ese email.",
+        code: "PLATFORM_USER_NOT_FOUND",
+        hint: "El seed crea `admin@gestor.platform` (configurable con SEED_SUPER_ADMIN_EMAIL / SEED_SUPER_ADMIN_PASSWORD). En producción: deploy con seed, o POST /api/internal/bootstrap con BOOTSTRAP_SECRET.",
+      },
+      { status: 404 }
+    );
   }
 
   const candidates = await resolveLoginCandidates(email);
@@ -167,7 +184,7 @@ export async function POST(req: Request) {
     ip,
   });
 
-  const redirectTo = `/t/${user.tenant.slug}/dashboard`;
+  const redirectTo = "/dashboard";
 
   const res = NextResponse.json({
     ok: true,

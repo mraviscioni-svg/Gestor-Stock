@@ -10,7 +10,7 @@ export default async function LoginPage() {
     redirect("/admin");
   }
   if (session?.tenantSlug) {
-    redirect(`/t/${session.tenantSlug}/dashboard`);
+    redirect("/dashboard");
   }
 
   return (

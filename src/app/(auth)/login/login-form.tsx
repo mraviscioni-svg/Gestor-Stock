@@ -9,6 +9,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const isAdminLogin = typeof next === "string" && next.includes("/admin");
   const reason = searchParams.get("reason");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +23,7 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     const slugTrim = tenantSlug.trim();
+    const platformOnly = isAdminLogin;
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,6 +31,7 @@ export function LoginForm() {
         email,
         password,
         ...(slugTrim ? { tenantSlug: slugTrim } : {}),
+        ...(platformOnly ? { platformOnly: true } : {}),
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -39,6 +42,13 @@ export function LoginForm() {
         const base =
           typeof data.error === "string" ? data.error : "Indicá en qué comercio querés entrar";
         setError(`${base}\n\nElegí el slug abajo o escribilo en el campo "Comercio (slug)".`);
+        return;
+      }
+      if (res.status === 404 && data.code === "PLATFORM_USER_NOT_FOUND") {
+        const hint = typeof data.hint === "string" ? data.hint : "";
+        setError(
+          `${typeof data.error === "string" ? data.error : "Usuario de plataforma no encontrado."}${hint ? `\n\n${hint}` : ""}`
+        );
         return;
       }
       const base =
@@ -89,40 +99,50 @@ export function LoginForm() {
               required
             />
           </div>
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Comercio (slug)
-            </label>
-            <input
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
-              type="text"
-              autoComplete="organization"
-              placeholder="solo si tenés más de un comercio"
-              value={tenantSlug}
-              onChange={(e) => setTenantSlug(e.target.value)}
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Si el mismo email existe en varios comercios, el servidor te pedirá el slug.
+          {!isAdminLogin ? (
+            <>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Comercio (slug)
+                </label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
+                  type="text"
+                  autoComplete="organization"
+                  placeholder="solo si tenés más de un comercio"
+                  value={tenantSlug}
+                  onChange={(e) => setTenantSlug(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Si el mismo email existe en varios comercios, el servidor te pedirá el slug.
+                </p>
+              </div>
+              {slugChoices && slugChoices.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {slugChoices.map((t) => (
+                    <button
+                      key={t.slug}
+                      type="button"
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-800 shadow-sm hover:border-sky-300 hover:bg-sky-50"
+                      onClick={() => {
+                        setTenantSlug(t.slug);
+                        setSlugChoices(null);
+                      }}
+                    >
+                      <span className="font-mono text-sky-800">{t.slug}</span>
+                      <span className="block text-slate-500">{t.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
+              Acceso a la plataforma: usá el email y la contraseña del usuario{" "}
+              <span className="font-semibold">SUPER_ADMIN</span> creado por el seed (por defecto{" "}
+              <span className="font-mono">admin@gestor.platform</span>).
             </p>
-          </div>
-          {slugChoices && slugChoices.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {slugChoices.map((t) => (
-                <button
-                  key={t.slug}
-                  type="button"
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-800 shadow-sm hover:border-sky-300 hover:bg-sky-50"
-                  onClick={() => {
-                    setTenantSlug(t.slug);
-                    setSlugChoices(null);
-                  }}
-                >
-                  <span className="font-mono text-sky-800">{t.slug}</span>
-                  <span className="block text-slate-500">{t.name}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
+          )}
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Contraseña

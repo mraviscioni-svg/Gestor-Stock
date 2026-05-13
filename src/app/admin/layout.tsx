@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/login?next=/admin");
   }
   if (session.role !== Role.SUPER_ADMIN) {
-    const dest = session.tenantSlug ? `/t/${session.tenantSlug}/dashboard` : "/login";
+    const dest = session.tenantId ? "/dashboard" : "/login";
     redirect(dest);
   }
 

@@ -58,6 +58,8 @@ export const loginSchema = z.object({
   password: z.string().min(1),
   /** Slug del comercio si el mismo email existe en más de un tenant. */
   tenantSlug: z.string().max(80).optional(),
+  /** Si es true (p. ej. login con next=/admin), no intentar login de comercio si no hay SUPER_ADMIN con ese email. */
+  platformOnly: z.boolean().optional(),
 });
 
 const tenantRoleEnum = z.enum(["OWNER", "ADMIN", "CASHIER", "VIEWER"]);

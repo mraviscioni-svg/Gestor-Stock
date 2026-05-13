@@ -5,7 +5,11 @@ export const userRepository = {
   /** SUPER_ADMIN de plataforma (sin tenant). */
   async findPlatformAdminByEmail(email: string) {
     return prisma.user.findFirst({
-      where: { email, role: Role.SUPER_ADMIN, tenantId: null },
+      where: {
+        email: { equals: email, mode: "insensitive" },
+        role: Role.SUPER_ADMIN,
+        tenantId: null,
+      },
     });
   },
 
