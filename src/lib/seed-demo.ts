@@ -13,14 +13,9 @@ import {
   DEMO_OWNER_PASSWORD,
   DEMO_TENANT_SLUG,
   LEGACY_DEMO_OWNER_EMAIL,
+  PLATFORM_SUPER_ADMIN_EMAIL,
+  PLATFORM_SUPER_ADMIN_PASSWORD,
 } from "../config/demo-auth-defaults";
-
-const SEED_SUPER_ADMIN_EMAIL =
-  (typeof process.env.SEED_SUPER_ADMIN_EMAIL === "string" && process.env.SEED_SUPER_ADMIN_EMAIL.trim()) ||
-  "admin@gestor.platform";
-const SEED_SUPER_ADMIN_PASSWORD =
-  (typeof process.env.SEED_SUPER_ADMIN_PASSWORD === "string" && process.env.SEED_SUPER_ADMIN_PASSWORD) ||
-  "ChangeMePlatform2026!";
 
 /**
  * Seed profesional: SUPER_ADMIN de plataforma, tenant demo, owner, cajero, catálogo, venta demo.
@@ -29,9 +24,9 @@ const SEED_SUPER_ADMIN_PASSWORD =
 export async function runDemoSeed(options?: { disconnect?: boolean }) {
   const shouldDisconnect = options?.disconnect ?? false;
 
-  const superHash = await bcrypt.hash(SEED_SUPER_ADMIN_PASSWORD, 12);
+  const superHash = await bcrypt.hash(PLATFORM_SUPER_ADMIN_PASSWORD, 12);
   const existingSuper = await prisma.user.findFirst({
-    where: { email: SEED_SUPER_ADMIN_EMAIL, role: Role.SUPER_ADMIN, tenantId: null },
+    where: { email: PLATFORM_SUPER_ADMIN_EMAIL, role: Role.SUPER_ADMIN, tenantId: null },
   });
   if (existingSuper) {
     await prisma.user.update({
@@ -41,7 +36,7 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
   } else {
     await prisma.user.create({
       data: {
-        email: SEED_SUPER_ADMIN_EMAIL,
+        email: PLATFORM_SUPER_ADMIN_EMAIL,
         passwordHash: superHash,
         role: Role.SUPER_ADMIN,
         tenantId: null,
@@ -256,6 +251,6 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
   return {
     ownerEmail: DEMO_OWNER_EMAIL,
     tenantSlug: DEMO_TENANT_SLUG,
-    superAdminEmail: SEED_SUPER_ADMIN_EMAIL,
+    superAdminEmail: PLATFORM_SUPER_ADMIN_EMAIL,
   };
 }

@@ -120,12 +120,13 @@ Para cambiar el demo, editá ese archivo y volvé a ejecutar seed/bootstrap.
 |----------|-------------|--------|
 | `DATABASE_URL` | Sí | Neon pooled / Supabase |
 | `JWT_SECRET` | Sí | ≥16 caracteres |
-| `BOOTSTRAP_SECRET` | Solo para bootstrap vía API | ≥16 caracteres; borrálo después de usar |
 | `NEXT_PUBLIC_*` | Recomendado | `APP_ENV`, `APP_URL`, opcional `DEMO_LOGIN_HINT` |
 
-4. **Deploy.** El build ejecuta `prisma db push` y, si **no existe** ningún usuario demo (`owner@demo.gestor.stock` / legado `owner@demo.kiosco.local`), corre **`prisma db seed`** automáticamente. No hace falta bootstrap manual en el primer deploy. Para desactivar: `VERCEL_SKIP_DEMO_SEED=1` en Vercel.
+El seed y el bootstrap **no** usan otras variables: credenciales demo y super admin están en [`src/config/demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts).
 
-5. **Opcional — re-sembrar o forzar datos:** `POST /api/internal/bootstrap` (con `BOOTSTRAP_SECRET`) o `npm run db:seed` local contra la misma `DATABASE_URL`.
+4. **Deploy.** El build ejecuta `prisma db push` y, si **no** están a la vez el super admin de plataforma y el owner demo, corre **`prisma db seed`** automáticamente.
+
+5. **Si falta el super admin:** `POST /api/internal/bootstrap` (sin headers; solo funciona mientras **no** exista ningún `SUPER_ADMIN` con `tenantId` null) o `npm run db:seed` local con la misma `DATABASE_URL`.
 
 6. Iniciá sesión en `/login` con las credenciales de [`demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts) (también se muestran en la pantalla).
 
@@ -134,7 +135,7 @@ Documentación ampliada: `docs/deployment-vercel.md`.
 ## Endpoints API (MVP)
 
 - `GET /api/health` — health simple  
-- `POST /api/internal/bootstrap` — seed demo protegido por header `x-bootstrap-secret` (ver arriba)  
+- `POST /api/internal/bootstrap` — seed demo; solo si aún no hay `SUPER_ADMIN` de plataforma (ver arriba)  
 - `GET/POST /api/products` — listado/creación (tenant desde sesión)  
 - `PUT /api/products/:id` — actualización / desactivación (`active: false`)  
 - `GET /api/products/barcode/:barcode` — lookup para venta  

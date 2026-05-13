@@ -14,20 +14,19 @@
 | `NEXT_PUBLIC_APP_ENV` | Production = `production`, Preview = `preprod` | Etiqueta visible en panel / logs de alto nivel. |
 | `NEXT_PUBLIC_APP_URL` | Production = URL canónica (`https://...`) | Útil para links absolutos futuros. |
 | `NEXT_PUBLIC_DEMO_LOGIN_HINT` | Opcional | Texto extra en login (sin secretos). |
-| `BOOTSTRAP_SECRET` | Opcional (solo para primer seed vía API) | Ver README; borrar tras usar. |
 
-Las credenciales del usuario demo están en **`src/config/demo-auth-defaults.ts`** y en la DB (hash); **no** van en variables de entorno.
+Las credenciales del usuario demo y del super admin de plataforma están en **`src/config/demo-auth-defaults.ts`** y en la DB (hash); **no** hace falta ninguna variable extra para el seed.
 
 ## Build
 
-El script `build` ejecuta `prisma generate`, `prisma db push`, un paso **`tsx scripts/vercel-auto-seed.ts`** (si no hay usuario demo, corre `prisma db seed`) y `next build`.
+El script `build` ejecuta `prisma generate`, `prisma db push`, un paso **`tsx scripts/vercel-auto-seed.ts`** (si falta super admin **o** owner demo, corre `prisma db seed`) y `next build`.
 
 ## Migraciones / datos
 
 En el primer deploy, `db push` en el build crea tablas. Para datos demo:
 
-1. Llamá una vez a `POST /api/internal/bootstrap` con `BOOTSTRAP_SECRET` (ver README), **o**
-2. Desde tu máquina: `npm run db:seed` (usa las mismas credenciales por defecto del archivo `demo-auth-defaults.ts`).
+1. Llamá una vez a `POST /api/internal/bootstrap` (solo responde **200** si aún no hay ningún `SUPER_ADMIN` de plataforma; sin secretos), **o**
+2. Desde tu máquina: `npm run db:seed` (usa las credenciales por defecto del archivo `demo-auth-defaults.ts`).
 
 ## Límites típicos (Hobby) a tener en cuenta
 

@@ -28,11 +28,11 @@
 2. Alta de usuarios del comercio desde **`/admin/tenants/[id]`** o por el OWNER en **Comercio → Equipo** (`/settings/users`).
 3. Límites `maxUsers` / `maxProducts` aplican al crear usuario o producto (errores de negocio `PLAN_LIMIT_*`).
 
-## Seed y variables
+## Seed (sin variables extra)
 
-- Por defecto: `SEED_SUPER_ADMIN_EMAIL` = `admin@gestor.platform`, `SEED_SUPER_ADMIN_PASSWORD` = `ChangeMePlatform2026!` (sobreescribibles por env).
-- Tenant demo: slug `demo-kiosco`, owner y cajero (ver `src/config/demo-auth-defaults.ts`).
-- Vercel: `scripts/vercel-auto-seed.ts` ejecuta seed si no hay super admin ni owner demo.
+- Super admin de plataforma y demo: valores en `src/config/demo-auth-defaults.ts` (`PLATFORM_SUPER_ADMIN_*`, owner, cajero, slug `demo-kiosco`).
+- Vercel: `scripts/vercel-auto-seed.ts` ejecuta seed si falta super admin **o** falta owner demo.
+- `POST /api/internal/bootstrap`: mismo seed, solo si aún no existe ningún `SUPER_ADMIN` con `tenantId = null`.
 
 ## Documentación relacionada
 

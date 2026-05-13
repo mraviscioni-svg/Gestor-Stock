@@ -105,7 +105,7 @@ export async function POST(req: Request) {
       {
         error: "No existe un administrador de plataforma con ese email.",
         code: "PLATFORM_USER_NOT_FOUND",
-        hint: "El seed crea `admin@gestor.platform` (configurable con SEED_SUPER_ADMIN_EMAIL / SEED_SUPER_ADMIN_PASSWORD). En producción: deploy con seed, o POST /api/internal/bootstrap con BOOTSTRAP_SECRET.",
+        hint: "El seed crea `admin@gestor.platform` (ver `src/config/demo-auth-defaults.ts`). Si la base está vacía: redeploy (el build corre seed) o `POST /api/internal/bootstrap` una vez mientras no exista SUPER_ADMIN.",
       },
       { status: 404 }
     );

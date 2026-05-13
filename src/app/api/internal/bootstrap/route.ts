@@ -1,32 +1,30 @@
 import { NextResponse } from "next/server";
+import { Role } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { runDemoSeed } from "@/lib/seed-demo";
 
 /**
- * One-shot demo seed for Vercel: creates tables data (user + tenant + products).
- * Protect with BOOTSTRAP_SECRET; remove secret from Vercel after calling once.
+ * Seed inicial sin variables de entorno: solo se permite si aún no hay ningún
+ * SUPER_ADMIN de plataforma (`tenantId = null`). Después responde 403.
+ * En una DB pública, llamá este POST apenas desplegás (ventana corta).
  */
-export async function POST(req: Request) {
-  const secret = process.env.BOOTSTRAP_SECRET;
-  if (!secret || secret.length < 16) {
+export async function POST() {
+  const existing = await prisma.user.count({
+    where: { role: Role.SUPER_ADMIN, tenantId: null },
+  });
+  if (existing > 0) {
     return NextResponse.json(
-      { error: "BOOTSTRAP_SECRET no configurado o demasiado corto (min 16 chars)" },
-      { status: 503 }
+      { error: "Bootstrap no disponible: ya existe un administrador de plataforma." },
+      { status: 403 }
     );
-  }
-
-  const header = req.headers.get("x-bootstrap-secret");
-  if (header !== secret) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
   try {
     const out = await runDemoSeed({ disconnect: false });
-    const email = out.ownerEmail;
     return NextResponse.json({
       ok: true,
-      message:
-        "Seed aplicado. Super admin (SEED_SUPER_ADMIN_EMAIL / SEED_SUPER_ADMIN_PASSWORD) y tenant demo listos.",
-      ownerEmail: email,
+      message: "Seed aplicado. Super admin y tenant demo listos (credenciales en demo-auth-defaults.ts).",
+      ownerEmail: out.ownerEmail,
       superAdminEmail: out.superAdminEmail,
     });
   } catch (e) {
