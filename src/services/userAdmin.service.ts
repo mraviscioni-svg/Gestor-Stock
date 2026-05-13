@@ -2,8 +2,10 @@ import bcrypt from "bcryptjs";
 import { Role } from "@prisma/client";
 import { assertActorCanAssignRole, requireTenantManager } from "@/lib/authz";
 import { DomainError } from "@/lib/errors";
+import { tenantRepository } from "@/repositories/tenant.repository";
 import { userRepository } from "@/repositories/user.repository";
-import type { SessionUser } from "@/types";
+import { AUDIT_ACTIONS, auditService } from "@/services/audit.service";
+import type { TenantSessionUser } from "@/types";
 
 function toRole(r: "OWNER" | "ADMIN" | "CASHIER" | "VIEWER"): Role {
   return Role[r];
@@ -36,7 +38,7 @@ export const userAdminService = {
   },
 
   async create(
-    session: SessionUser,
+    session: TenantSessionUser,
     input: {
       email: string;
       password: string;
@@ -47,6 +49,13 @@ export const userAdminService = {
     requireTenantManager(session);
     const role = toRole(input.role);
     assertActorCanAssignRole(session.role, role);
+    const tenant = await tenantRepository.findById(session.tenantId);
+    if (tenant?.maxUsers != null) {
+      const n = await tenantRepository.countUsers(session.tenantId);
+      if (n >= tenant.maxUsers) {
+        throw new DomainError("Límite de usuarios del plan alcanzado", "PLAN_LIMIT_USERS");
+      }
+    }
     const email = input.email;
     const existing = await userRepository.findByTenantAndEmail(session.tenantId, email);
     if (existing) {
@@ -65,11 +74,19 @@ export const userAdminService = {
       role,
       active: true,
     });
+    await auditService.log({
+      actorUserId: session.userId,
+      actorTenantId: session.tenantId,
+      action: AUDIT_ACTIONS.USER_CREATED,
+      entityType: "User",
+      entityId: created.id,
+      metadata: { email: created.email, role: created.role },
+    });
     return serializeUser(created);
   },
 
   async update(
-    session: SessionUser,
+    session: TenantSessionUser,
     userId: string,
     input: {
       name?: string | null;
@@ -115,6 +132,7 @@ export const userAdminService = {
     const role = input.role === undefined ? undefined : toRole(input.role);
     const active = input.active;
 
+    const prevRole = target.role;
     const updated = await userRepository.updateInTenant(session.tenantId, userId, {
       ...(name !== undefined && { name }),
       ...(role !== undefined && { role }),
@@ -122,6 +140,16 @@ export const userAdminService = {
     });
     if (!updated) {
       throw new DomainError("Usuario no encontrado", "NOT_FOUND", 404);
+    }
+    if (role !== undefined && role !== prevRole) {
+      await auditService.log({
+        actorUserId: session.userId,
+        actorTenantId: session.tenantId,
+        action: AUDIT_ACTIONS.ROLE_CHANGED,
+        entityType: "User",
+        entityId: userId,
+        metadata: { from: prevRole, to: role },
+      });
     }
     return serializeUser(updated);
   },

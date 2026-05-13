@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
+import { requireTenantSession } from "@/lib/auth/server";
 import { canViewAllSalesInTenant } from "@/lib/authz";
-import { getTenantIdForRequest } from "@/lib/tenant";
 import { saleCreateSchema } from "@/lib/validations";
 import { saleRepository, mapSaleToDTO } from "@/repositories/sale.repository";
 import { saleService } from "@/services/sale.service";
@@ -9,8 +8,8 @@ import { handleRouteError } from "@/lib/http";
 
 export async function GET() {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const filterUserId = canViewAllSalesInTenant(session.role) ? null : session.userId;
     const rows = await saleRepository.listRecent(tenantId, 50, filterUserId);
     return NextResponse.json({ data: rows.map(mapSaleToDTO) });
@@ -21,8 +20,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const body = await req.json().catch(() => null);
     const parsed = saleCreateSchema.safeParse(body);
     if (!parsed.success) {

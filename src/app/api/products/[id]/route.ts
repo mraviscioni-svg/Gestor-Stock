@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
-import { getTenantIdForRequest } from "@/lib/tenant";
+import { requireTenantSession } from "@/lib/auth/server";
 import { productPutSchema } from "@/lib/validations";
 import { productService } from "@/services/product.service";
 import { handleRouteError } from "@/lib/http";
@@ -9,8 +8,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function PUT(req: Request, ctx: Params) {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const { id } = await ctx.params;
     const body = await req.json().catch(() => null);
     const parsed = productPutSchema.safeParse(body);

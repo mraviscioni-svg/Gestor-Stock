@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PaymentMethod } from "@prisma/client";
+import { PaymentMethod, TenantStatus } from "@prisma/client";
 
 export const paymentMethodSchema = z.nativeEnum(PaymentMethod);
 
@@ -77,4 +77,40 @@ export const userUpdateSchema = z.object({
   name: z.string().max(120).optional().nullable(),
   role: tenantRoleEnum.optional(),
   active: z.boolean().optional(),
+});
+
+export const adminTenantCreateSchema = z.object({
+  name: z.string().min(1).max(120),
+  slug: z.string().max(64).optional(),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().max(40).optional().nullable(),
+  status: z.nativeEnum(TenantStatus).optional(),
+});
+
+export const adminTenantPatchSchema = z.object({
+  name: z.string().min(1).max(120).optional(),
+  email: z.string().email().optional().nullable(),
+  phone: z.string().max(40).optional().nullable(),
+  logoUrl: z.union([z.string().url().max(500), z.literal("")]).optional().nullable(),
+  subdomain: z.string().max(64).optional().nullable(),
+  status: z.nativeEnum(TenantStatus).optional(),
+  currentPlan: z.string().max(64).optional(),
+  maxUsers: z.coerce.number().int().positive().optional().nullable(),
+  maxProducts: z.coerce.number().int().positive().optional().nullable(),
+});
+
+const platformTenantRoleEnum = z.enum(["OWNER", "ADMIN", "CASHIER", "VIEWER"]);
+
+export const adminUserCreateSchema = z.object({
+  email: z.string().email().transform((e) => e.trim().toLowerCase()),
+  password: z.string().min(8).max(128),
+  name: z.string().max(120).optional().nullable(),
+  role: platformTenantRoleEnum.default("CASHIER"),
+});
+
+export const adminUserPatchSchema = z.object({
+  name: z.string().max(120).optional().nullable(),
+  role: platformTenantRoleEnum.optional(),
+  active: z.boolean().optional(),
+  password: z.string().min(8).max(128).optional(),
 });

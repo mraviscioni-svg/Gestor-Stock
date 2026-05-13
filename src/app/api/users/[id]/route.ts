@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
+import { requireTenantSession } from "@/lib/auth/server";
 import { userUpdateSchema } from "@/lib/validations";
 import { handleRouteError } from "@/lib/http";
 import { userAdminService } from "@/services/userAdmin.service";
@@ -8,7 +8,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 export async function PUT(req: Request, ctx: Ctx) {
   try {
-    const session = await requireSession();
+    const session = await requireTenantSession();
     const { id } = await ctx.params;
     const body = await req.json().catch(() => null);
     const parsed = userUpdateSchema.safeParse(body);

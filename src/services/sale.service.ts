@@ -11,6 +11,7 @@ import { canManageOthersSales } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { mapSaleToDTO } from "@/repositories/sale.repository";
 import type { SessionUser } from "@/types";
+import { AUDIT_ACTIONS, auditService } from "@/services/audit.service";
 
 export type SaleCreateMode = "immediate" | "deferred";
 
@@ -109,6 +110,15 @@ export const saleService = {
       }
 
       return created;
+    });
+
+    await auditService.log({
+      actorUserId: userId,
+      actorTenantId: tenantId,
+      action: AUDIT_ACTIONS.SALE_CREATED,
+      entityType: "Sale",
+      entityId: sale.id,
+      metadata: { total: sale.total.toString(), mode: input.mode },
     });
 
     return mapSaleToDTO(sale);

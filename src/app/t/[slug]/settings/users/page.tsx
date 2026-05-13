@@ -28,7 +28,7 @@ const roleLabels: Record<string, string> = {
 
 export default function UsersSettingsPage() {
   const router = useRouter();
-  const { canManageTenant, userLabel } = useTenantAdmin();
+  const { canManageTenant, userLabel, tenantBasePath } = useTenantAdmin();
   const [rows, setRows] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export default function UsersSettingsPage() {
 
   useEffect(() => {
     if (!canManageTenant) {
-      router.replace("/settings");
+      router.replace(`${tenantBasePath}/settings`);
       return;
     }
     void load();
@@ -118,7 +118,7 @@ export default function UsersSettingsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <Link
-            href="/settings"
+            href={`${tenantBasePath}/settings`}
             className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-sky-700 hover:text-sky-800"
           >
             <ArrowLeft className="h-4 w-4" />

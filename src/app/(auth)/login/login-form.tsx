@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Loader2, LockKeyhole } from "lucide-react";
-import { DEMO_OWNER_EMAIL, DEMO_OWNER_PASSWORD, DEMO_TENANT_SLUG } from "@/config/demo-auth-defaults";
 
 export function LoginForm() {
   const router = useRouter();
@@ -17,11 +16,6 @@ export function LoginForm() {
   const [slugChoices, setSlugChoices] = useState<{ slug: string; name: string }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setEmail(DEMO_OWNER_EMAIL);
-    setTenantSlug(DEMO_TENANT_SLUG);
-  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -54,7 +48,8 @@ export function LoginForm() {
       return;
     }
     setSlugChoices(null);
-    router.push(next);
+    const dest = typeof data.redirectTo === "string" ? data.redirectTo : next;
+    router.push(dest);
     router.refresh();
   }
 
@@ -69,7 +64,9 @@ export function LoginForm() {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-slate-900">Bienvenido</h1>
-            <p className="text-sm text-slate-500">Ingresá con tu usuario del tenant demo.</p>
+            <p className="text-sm text-slate-500">
+              Ingresá con tu email. Si tenés varios comercios, indicá el slug del comercio.
+            </p>
           </div>
         </div>
 
@@ -100,13 +97,12 @@ export function LoginForm() {
               className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
               type="text"
               autoComplete="organization"
-              placeholder={DEMO_TENANT_SLUG}
+              placeholder="solo si tenés más de un comercio"
               value={tenantSlug}
               onChange={(e) => setTenantSlug(e.target.value)}
             />
             <p className="mt-1 text-xs text-slate-500">
-              Si el mismo email existe en varios comercios, el servidor te pedirá el slug. En demo viene
-              rellenado.
+              Si el mismo email existe en varios comercios, el servidor te pedirá el slug.
             </p>
           </div>
           {slugChoices && slugChoices.length > 0 ? (
@@ -145,12 +141,6 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
-          <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700 ring-1 ring-slate-200">
-            <span className="font-semibold text-slate-800">Demo:</span> usuario y clave por defecto
-            están en el código y en la DB tras el seed. Email{" "}
-            <span className="font-mono text-slate-900">{DEMO_OWNER_EMAIL}</span> · clave{" "}
-            <span className="font-mono text-slate-900">{DEMO_OWNER_PASSWORD}</span>
-          </p>
           {demoHint ? (
             <p className="rounded-xl bg-sky-50 px-3 py-2 text-xs text-sky-900 ring-1 ring-sky-100">
               {demoHint}

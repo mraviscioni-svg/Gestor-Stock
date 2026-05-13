@@ -5,7 +5,7 @@ import { Building2, ChevronRight, Users } from "lucide-react";
 import { useTenantAdmin } from "@/components/layout/TenantAdminContext";
 
 export default function SettingsHubPage() {
-  const { canManageTenant } = useTenantAdmin();
+  const { canManageTenant, tenantBasePath } = useTenantAdmin();
 
   return (
     <div className="space-y-8">
@@ -19,7 +19,7 @@ export default function SettingsHubPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Link
-          href="/settings/tenant"
+          href={`${tenantBasePath}/settings/tenant`}
           className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-slate-200/60 transition hover:border-sky-200 hover:shadow-md"
         >
           <div className="flex items-start gap-3">
@@ -38,7 +38,7 @@ export default function SettingsHubPage() {
 
         {canManageTenant ? (
           <Link
-            href="/settings/users"
+            href={`${tenantBasePath}/settings/users`}
             className="group flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-slate-200/60 transition hover:border-sky-200 hover:shadow-md"
           >
             <div className="flex items-start gap-3">

@@ -1,7 +1,18 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { Role } from "@prisma/client";
+import { getSessionFromCookies } from "@/lib/auth/server";
 import { LoginForm } from "./login-form";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getSessionFromCookies();
+  if (session?.role === Role.SUPER_ADMIN) {
+    redirect("/admin");
+  }
+  if (session?.tenantSlug) {
+    redirect(`/t/${session.tenantSlug}/dashboard`);
+  }
+
   return (
     <Suspense
       fallback={

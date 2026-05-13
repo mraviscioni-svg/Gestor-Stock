@@ -14,10 +14,14 @@ function getJwtSecretBytes(): Uint8Array {
 }
 
 export async function signSessionToken(user: SessionUser): Promise<string> {
-  return new SignJWT({
-    tid: user.tenantId,
+  const payload: Record<string, unknown> = {
     role: String(user.role),
-  })
+  };
+  if (user.tenantId && user.tenantSlug) {
+    payload.tid = user.tenantId;
+    payload.tslug = user.tenantSlug;
+  }
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.userId)
     .setIssuedAt()
@@ -33,11 +37,19 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
     const key = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, key);
     const userId = typeof payload.sub === "string" ? payload.sub : null;
+    const roleRaw = payload.role;
+    if (!userId || typeof roleRaw !== "string") return null;
+    if (!Object.values(Role).includes(roleRaw as Role)) return null;
+    const role = roleRaw as Role;
+
     const tenantId = typeof payload.tid === "string" ? payload.tid : null;
-    const role = payload.role;
-    if (!userId || !tenantId || typeof role !== "string") return null;
-    if (!Object.values(Role).includes(role as Role)) return null;
-    return { userId, tenantId, role: role as Role };
+    const tenantSlug = typeof payload.tslug === "string" ? payload.tslug : null;
+
+    if (role === Role.SUPER_ADMIN) {
+      return { userId, tenantId: null, tenantSlug: null, role };
+    }
+    if (!tenantId || !tenantSlug) return null;
+    return { userId, tenantId, tenantSlug, role };
   } catch {
     return null;
   }

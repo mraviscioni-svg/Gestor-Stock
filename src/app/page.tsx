@@ -40,12 +40,12 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/30 transition hover:bg-sky-400"
-              >
-                Ver dashboard
-                <LayoutDashboard className="h-4 w-4" />
-              </Link>
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-sky-500/30 transition hover:bg-sky-400"
+            >
+              Ir al panel
+              <LayoutDashboard className="h-4 w-4" />
+            </Link>
               <Link
                 href="/login"
                 className="inline-flex items-center gap-2 rounded-xl bg-white/5 px-5 py-3 text-sm font-semibold text-white ring-1 ring-white/15 transition hover:bg-white/10"

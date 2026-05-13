@@ -1,32 +1,62 @@
 import { NextResponse } from "next/server";
+import { Role } from "@prisma/client";
 import { requireSession } from "@/lib/auth/server";
 import { canManageTenant } from "@/lib/authz";
-import { getTenantIdForRequest } from "@/lib/tenant";
 import { handleRouteError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
-    const [user, tenant] = await Promise.all([
+    const [user] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.userId },
         select: { id: true, email: true, name: true, role: true, active: true },
       }),
-      prisma.tenant.findUnique({
-        where: { id: tenantId },
-        select: { id: true, name: true, slug: true },
-      }),
     ]);
-    if (!user || !tenant) {
+    if (!user) {
       return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
     }
+
+    if (session.role === Role.SUPER_ADMIN) {
+      return NextResponse.json({
+        data: {
+          user,
+          tenant: null,
+          tenantSlug: null,
+          canManageTenant: false,
+          isPlatformAdmin: true,
+        },
+      });
+    }
+
+    if (!session.tenantId) {
+      return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+    }
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: session.tenantId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true,
+        email: true,
+        status: true,
+        currentPlan: true,
+      },
+    });
+    if (!tenant) {
+      return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
+    }
+
     return NextResponse.json({
       data: {
         user,
         tenant,
+        tenantSlug: session.tenantSlug,
         canManageTenant: canManageTenant(user.role),
+        isPlatformAdmin: false,
       },
     });
   } catch (e) {

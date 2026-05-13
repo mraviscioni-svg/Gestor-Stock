@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
-import { getTenantIdForRequest } from "@/lib/tenant";
+import { requireTenantSession } from "@/lib/auth/server";
 import { productCreateSchema } from "@/lib/validations";
 import { productService } from "@/services/product.service";
 import { handleRouteError } from "@/lib/http";
 
 export async function GET(req: Request) {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q") ?? undefined;
     const includeInactive = searchParams.get("includeInactive") === "1";
@@ -21,8 +20,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const body = await req.json().catch(() => null);
     const parsed = productCreateSchema.safeParse(body);
     if (!parsed.success) {

@@ -2,10 +2,18 @@ import type { PaymentMethod, PaymentStatus, Role, SaleStatus } from "@prisma/cli
 
 export type { PaymentMethod, Role, PaymentStatus, SaleStatus };
 
+/** Claims mínimos del JWT (cookie httpOnly). */
 export type SessionUser = {
   userId: string;
-  tenantId: string;
+  tenantId: string | null;
+  tenantSlug: string | null;
   role: Role;
+};
+
+/** Sesión de usuario de un comercio (no SUPER_ADMIN de plataforma). */
+export type TenantSessionUser = Omit<SessionUser, "tenantId" | "tenantSlug"> & {
+  tenantId: string;
+  tenantSlug: string;
 };
 
 export type ProductDTO = {

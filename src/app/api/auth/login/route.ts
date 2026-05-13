@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { Role, TenantStatus } from "@prisma/client";
 import { SESSION_COOKIE, signSessionToken } from "@/lib/auth/token";
 import { loginSchema } from "@/lib/validations";
 import { userRepository } from "@/repositories/user.repository";
-import { jsonError } from "@/lib/http";
-import {
-  DEMO_OWNER_EMAIL,
-  LEGACY_DEMO_OWNER_EMAIL,
-} from "@/config/demo-auth-defaults";
+import { jsonError, getClientIp } from "@/lib/http";
+import { auditService, AUDIT_ACTIONS } from "@/services/audit.service";
 
 type LoginUser = Awaited<ReturnType<typeof userRepository.findLoginCandidatesByEmail>>[number];
 
@@ -19,12 +17,7 @@ function dedupeById(users: LoginUser[]) {
 
 async function resolveLoginCandidates(email: string) {
   const primary = await userRepository.findLoginCandidatesByEmail(email);
-  let merged = dedupeById(primary);
-  if (email === DEMO_OWNER_EMAIL.toLowerCase()) {
-    const legacy = await userRepository.findLoginCandidatesByEmail(LEGACY_DEMO_OWNER_EMAIL.toLowerCase());
-    merged = dedupeById([...merged, ...legacy]);
-  }
-  return merged.filter((u) => u.tenantId && u.tenant);
+  return dedupeById(primary).filter((u) => u.tenantId && u.tenant);
 }
 
 function tenantChoices(users: LoginUser[]) {
@@ -50,24 +43,65 @@ export async function POST(req: Request) {
   const tenantSlug =
     typeof rawSlug === "string" && rawSlug.trim() ? rawSlug.trim().toLowerCase() : undefined;
 
-  const candidates = await resolveLoginCandidates(email);
+  const ip = getClientIp(req);
 
-  const isDemoEmail =
-    email === DEMO_OWNER_EMAIL.toLowerCase() || email === LEGACY_DEMO_OWNER_EMAIL.toLowerCase();
+  const platformAdmin = await userRepository.findPlatformAdminByEmail(email);
+  if (platformAdmin) {
+    const ok = await bcrypt.compare(password, platformAdmin.passwordHash);
+    if (!ok) {
+      return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
+    }
+    if (!platformAdmin.active) {
+      return jsonError("Cuenta desactivada.", 403);
+    }
+    let token: string;
+    try {
+      token = await signSessionToken({
+        userId: platformAdmin.id,
+        tenantId: null,
+        tenantSlug: null,
+        role: Role.SUPER_ADMIN,
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("[login] signSessionToken", e);
+      return jsonError("No se pudo crear la sesión (JWT).", 503);
+    }
+    await auditService.log({
+      actorUserId: platformAdmin.id,
+      actorTenantId: null,
+      action: AUDIT_ACTIONS.LOGIN,
+      metadata: { scope: "platform" },
+      ip,
+    });
+    const res = NextResponse.json({
+      ok: true,
+      redirectTo: "/admin",
+      user: {
+        id: platformAdmin.id,
+        email: platformAdmin.email,
+        name: platformAdmin.name,
+        role: platformAdmin.role,
+      },
+    });
+    res.cookies.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      secure: process.env.NODE_ENV === "production",
+    });
+    return res;
+  }
+
+  const candidates = await resolveLoginCandidates(email);
 
   let user: LoginUser | null = null;
   if (tenantSlug) {
     user = candidates.find((u) => u.tenant!.slug === tenantSlug) ?? null;
     if (!user) {
       return NextResponse.json(
-        {
-          error: "No hay usuario con ese email en el comercio indicado.",
-          ...(isDemoEmail
-            ? {
-                hint: `Slug del tenant demo: revisá src/config/demo-auth-defaults.ts (DEMO_TENANT_SLUG).`,
-              }
-            : {}),
-        },
+        { error: "No hay usuario con ese email en el comercio indicado." },
         { status: 401 }
       );
     }
@@ -84,35 +118,20 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!user || !user.tenantId) {
-    return NextResponse.json(
-      {
-        error: "Usuario o contraseña incorrectos",
-        ...(isDemoEmail
-          ? {
-              hint: "Si es la primera vez en esta base, el próximo deploy en Vercel crea el usuario demo solo (build + seed). También podés: POST /api/internal/bootstrap (BOOTSTRAP_SECRET) o npm run db:seed con esta DATABASE_URL.",
-            }
-          : {}),
-      },
-      { status: 401 }
-    );
+  if (!user || !user.tenantId || !user.tenant) {
+    return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
   }
+
+  if (user.tenant.status !== TenantStatus.ACTIVE) {
+    return jsonError("Este comercio no está activo. Contactá al soporte.", 403);
+  }
+
   if (!user.active) {
     return jsonError("Cuenta desactivada. Contactá al administrador del comercio.", 403);
   }
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
-    return NextResponse.json(
-      {
-        error: "Usuario o contraseña incorrectos",
-        ...(isDemoEmail
-          ? {
-              hint: "Contraseña demo actual: la de src/config/demo-auth-defaults.ts. Si la base se sembró con otra clave, volvé a ejecutar bootstrap o db:seed para actualizar el hash.",
-            }
-          : {}),
-      },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: "Usuario o contraseña incorrectos" }, { status: 401 });
   }
 
   let token: string;
@@ -120,6 +139,7 @@ export async function POST(req: Request) {
     token = await signSessionToken({
       userId: user.id,
       tenantId: user.tenantId,
+      tenantSlug: user.tenant.slug,
       role: user.role,
     });
   } catch (e) {
@@ -132,17 +152,29 @@ export async function POST(req: Request) {
       {
         error: "No se pudo crear la sesión (JWT).",
         hint: missingJwt
-          ? `JWT_SECRET no llega al servidor o tiene menos de 16 caracteres (longitud detectada: ${secretLen}). En Vercel: Settings → Environment Variables → JWT_SECRET debe tener tildado el entorno de ESTE deploy (Preview si la URL es de preview, Production si es producción). Guardá y hacé Redeploy sin caché.`
-          : `Fallo al firmar el token (${reason.slice(0, 120)}). Probá Redeploy sin caché.`,
+          ? `JWT_SECRET no llega al servidor o tiene menos de 16 caracteres (longitud detectada: ${secretLen}).`
+          : `Fallo al firmar el token (${reason.slice(0, 120)}).`,
       },
       { status: 503 }
     );
   }
 
+  await auditService.log({
+    actorUserId: user.id,
+    actorTenantId: user.tenantId,
+    action: AUDIT_ACTIONS.LOGIN,
+    metadata: { slug: user.tenant.slug },
+    ip,
+  });
+
+  const redirectTo = `/t/${user.tenant.slug}/dashboard`;
+
   const res = NextResponse.json({
     ok: true,
+    redirectTo,
     user: { id: user.id, email: user.email, name: user.name, role: user.role },
     tenantId: user.tenantId,
+    tenantSlug: user.tenant.slug,
   });
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,

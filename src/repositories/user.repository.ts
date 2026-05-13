@@ -1,11 +1,22 @@
-import { Role } from "@prisma/client";
+import { Role, TenantStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export const userRepository = {
-  /** Usuarios con este email que tienen comercio asignado (login). */
+  /** SUPER_ADMIN de plataforma (sin tenant). */
+  async findPlatformAdminByEmail(email: string) {
+    return prisma.user.findFirst({
+      where: { email, role: Role.SUPER_ADMIN, tenantId: null },
+    });
+  },
+
+  /** Usuarios con este email que tienen comercio asignado y comercio activo. */
   async findLoginCandidatesByEmail(email: string) {
     return prisma.user.findMany({
-      where: { email, tenantId: { not: null } },
+      where: {
+        email,
+        tenantId: { not: null },
+        tenant: { status: TenantStatus.ACTIVE },
+      },
       include: { tenant: true },
     });
   },
@@ -61,6 +72,24 @@ export const userRepository = {
         role: data.role,
         active: data.active ?? true,
       },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  },
+
+  async setPasswordHashInTenant(tenantId: string, id: string, passwordHash: string) {
+    const row = await prisma.user.findFirst({ where: { id, tenantId } });
+    if (!row) return null;
+    return prisma.user.update({
+      where: { id },
+      data: { passwordHash },
       select: {
         id: true,
         email: true,

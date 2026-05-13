@@ -1,6 +1,6 @@
 # Gestor de Stock (MVP)
 
-SaaS **multi-tenant** para **catálogo, ventas y stock**: lector de código de barras tipo teclado (HID), ajustes de inventario y panel operativo. Pensado para **Vercel Hobby** + **PostgreSQL** externo (**Neon** o **Supabase**) y **Prisma ORM**.
+SaaS **multi-tenant** para **catálogo, ventas y stock**: lector de código de barras tipo teclado (HID), ajustes de inventario y panel operativo. Pensado para **Vercel Hobby** + **PostgreSQL** externo (**Neon** o **Supabase**) y **Prisma ORM**. El panel del comercio vive bajo **`/t/[slug]/...`**; el **admin de plataforma** (`SUPER_ADMIN`) en **`/admin`**.
 
 ## Stack
 

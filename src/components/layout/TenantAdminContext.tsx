@@ -7,6 +7,10 @@ export type TenantAdminContextValue = {
   canManageTenant: boolean;
   userLabel: string;
   userRole: Role;
+  /** Prefijo de rutas del comercio, ej. `/t/demo-kiosco` */
+  tenantBasePath: string;
+  tenantName: string;
+  logoUrl: string | null;
 };
 
 const TenantAdminContext = createContext<TenantAdminContextValue | null>(null);

@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
+import { requireTenantSession } from "@/lib/auth/server";
 import { canManageOthersSales } from "@/lib/authz";
-import { getTenantIdForRequest } from "@/lib/tenant";
 import { Role } from "@prisma/client";
 import { saleRepository, mapSaleToDTO } from "@/repositories/sale.repository";
 import { handleRouteError } from "@/lib/http";
 
 export async function GET() {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const seeAllOpen = canManageOthersSales(session.role) || session.role === Role.VIEWER;
     const filterUserId = seeAllOpen ? null : session.userId;
     const rows = await saleRepository.listOpen(tenantId, filterUserId);

@@ -22,9 +22,10 @@ import { useTenantAdmin } from "@/components/layout/TenantAdminContext";
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userLabel, canManageTenant, userRole } = useTenantAdmin();
-  const posOk = ["CASHIER", "ADMIN", "OWNER", "SUPER_ADMIN"].includes(userRole);
-  const monitorOk = ["ADMIN", "OWNER", "VIEWER", "SUPER_ADMIN"].includes(userRole);
+  const { userLabel, canManageTenant, userRole, tenantBasePath, tenantName, logoUrl } =
+    useTenantAdmin();
+  const posOk = ["CASHIER", "ADMIN", "OWNER"].includes(userRole);
+  const monitorOk = ["ADMIN", "OWNER", "VIEWER"].includes(userRole);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -32,23 +33,28 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     router.refresh();
   }
 
-  const settingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
+  const settingsActive =
+    pathname === `${tenantBasePath}/settings` || pathname.startsWith(`${tenantBasePath}/settings/`);
 
   const navItems: { href: string; label: string; icon: typeof LayoutDashboard }[] = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/products", label: "Productos", icon: Boxes },
+    { href: `${tenantBasePath}/dashboard`, label: "Dashboard", icon: LayoutDashboard },
+    { href: `${tenantBasePath}/products`, label: "Productos", icon: Boxes },
   ];
   if (posOk) {
-    navItems.push({ href: "/sales/pos", label: "Punto de venta", icon: Store });
+    navItems.push({ href: `${tenantBasePath}/sales/pos`, label: "Punto de venta", icon: Store });
   }
   navItems.push(
-    { href: "/sales", label: "Venta simple", icon: ScanLine },
-    { href: "/sales/open", label: "Ventas abiertas", icon: Clock },
-    { href: "/sales/history", label: "Historial", icon: History },
-    { href: "/stock", label: "Stock", icon: ShoppingBasket }
+    { href: `${tenantBasePath}/sales`, label: "Venta simple", icon: ScanLine },
+    { href: `${tenantBasePath}/sales/open`, label: "Ventas abiertas", icon: Clock },
+    { href: `${tenantBasePath}/sales/history`, label: "Historial", icon: History },
+    { href: `${tenantBasePath}/stock`, label: "Stock", icon: ShoppingBasket }
   );
   if (monitorOk) {
-    navItems.push({ href: "/manager/live-sales", label: "Monitor en vivo", icon: Radio });
+    navItems.push({
+      href: `${tenantBasePath}/manager/live-sales`,
+      label: "Monitor en vivo",
+      icon: Radio,
+    });
   }
 
   useEffect(() => {
@@ -65,16 +71,25 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return () => clearInterval(t);
   }, [pathname]);
 
+  const dashHref = `${tenantBasePath}/dashboard`;
+
   return (
     <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[260px_1fr]">
       <aside className="border-b border-slate-200 bg-white lg:flex lg:min-h-screen lg:flex-col lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-3 px-5 py-5">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-600/30">
-              <Sparkles className="h-5 w-5" />
-            </span>
+          <Link href={dashHref} className="flex items-center gap-3">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <span className="flex h-10 w-10 shrink-0 overflow-hidden rounded-2xl ring-1 ring-slate-200">
+                <img src={logoUrl} alt="" className="h-10 w-10 object-cover" />
+              </span>
+            ) : (
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-600 text-white shadow-lg shadow-sky-600/30">
+                <Sparkles className="h-5 w-5" />
+              </span>
+            )}
             <span>
-              <span className="block text-sm font-semibold text-slate-900">Gestor de Stock</span>
+              <span className="block text-sm font-semibold text-slate-900">{tenantName}</span>
               <span className="block text-xs text-slate-500 truncate max-w-[160px]" title={userLabel}>
                 {userLabel}
               </span>
@@ -83,12 +98,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:px-3 lg:pb-6">
           {navItems.map((item) => {
+            const base = tenantBasePath;
             const active =
               pathname === item.href ||
-              (item.href !== "/dashboard" &&
-                item.href !== "/sales" &&
+              (item.href !== dashHref &&
+                item.href !== `${base}/sales` &&
                 pathname.startsWith(`${item.href}/`)) ||
-              (item.href === "/sales" && pathname === "/sales");
+              (item.href === `${base}/sales` && pathname === `${base}/sales`);
             const Icon = item.icon;
             return (
               <Link
@@ -107,7 +123,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             );
           })}
           <Link
-            href="/settings"
+            href={`${tenantBasePath}/settings`}
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition",
               settingsActive

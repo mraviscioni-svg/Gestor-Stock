@@ -1,5 +1,12 @@
 import bcrypt from "bcryptjs";
-import { PaymentMethod, PaymentStatus, Role, SaleStatus, StockMovementReason } from "@prisma/client";
+import {
+  PaymentMethod,
+  PaymentStatus,
+  Role,
+  SaleStatus,
+  StockMovementReason,
+  TenantStatus,
+} from "@prisma/client";
 import { prisma } from "./prisma";
 import {
   DEMO_OWNER_EMAIL,
@@ -8,21 +15,57 @@ import {
   LEGACY_DEMO_OWNER_EMAIL,
 } from "../config/demo-auth-defaults";
 
+const SEED_SUPER_ADMIN_EMAIL =
+  (typeof process.env.SEED_SUPER_ADMIN_EMAIL === "string" && process.env.SEED_SUPER_ADMIN_EMAIL.trim()) ||
+  "admin@gestor.platform";
+const SEED_SUPER_ADMIN_PASSWORD =
+  (typeof process.env.SEED_SUPER_ADMIN_PASSWORD === "string" && process.env.SEED_SUPER_ADMIN_PASSWORD) ||
+  "ChangeMePlatform2026!";
+
 /**
- * Crea/actualiza tenant demo, usuario owner, categorías, productos y venta demo.
- * Usado por `prisma db seed` y por el bootstrap HTTP (Vercel).
+ * Seed profesional: SUPER_ADMIN de plataforma, tenant demo, owner, cajero, catálogo, venta demo.
+ * Usado por `prisma db seed` y bootstrap HTTP.
  */
 export async function runDemoSeed(options?: { disconnect?: boolean }) {
   const shouldDisconnect = options?.disconnect ?? false;
+
+  const superHash = await bcrypt.hash(SEED_SUPER_ADMIN_PASSWORD, 12);
+  const existingSuper = await prisma.user.findFirst({
+    where: { email: SEED_SUPER_ADMIN_EMAIL, role: Role.SUPER_ADMIN, tenantId: null },
+  });
+  if (existingSuper) {
+    await prisma.user.update({
+      where: { id: existingSuper.id },
+      data: { passwordHash: superHash, active: true, name: "Platform Admin" },
+    });
+  } else {
+    await prisma.user.create({
+      data: {
+        email: SEED_SUPER_ADMIN_EMAIL,
+        passwordHash: superHash,
+        role: Role.SUPER_ADMIN,
+        tenantId: null,
+        name: "Platform Admin",
+        active: true,
+      },
+    });
+  }
 
   const passwordHash = await bcrypt.hash(DEMO_OWNER_PASSWORD, 12);
 
   const tenant = await prisma.tenant.upsert({
     where: { slug: DEMO_TENANT_SLUG },
-    update: { name: "Tienda demo — Gestor de Stock" },
+    update: {
+      name: "Tienda demo — Gestor de Stock",
+      status: TenantStatus.ACTIVE,
+      currentPlan: "demo",
+    },
     create: {
       name: "Tienda demo — Gestor de Stock",
       slug: DEMO_TENANT_SLUG,
+      status: TenantStatus.ACTIVE,
+      email: "contacto@demo.gestor.stock",
+      currentPlan: "demo",
     },
   });
 
@@ -58,11 +101,22 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
     },
   });
 
-  const categoriesData = [
-    { name: "Bebidas" },
-    { name: "Snacks" },
-    { name: "Lácteos" },
-  ];
+  const cashierEmail = "cajero@demo.gestor.stock";
+  const cashierHash = await bcrypt.hash(DEMO_OWNER_PASSWORD, 12);
+  await prisma.user.upsert({
+    where: { tenantId_email: { tenantId: tenant.id, email: cashierEmail } },
+    update: { passwordHash: cashierHash, role: Role.CASHIER, active: true, name: "Cajero Demo" },
+    create: {
+      email: cashierEmail,
+      passwordHash: cashierHash,
+      role: Role.CASHIER,
+      tenantId: tenant.id,
+      name: "Cajero Demo",
+      active: true,
+    },
+  });
+
+  const categoriesData = [{ name: "Bebidas" }, { name: "Snacks" }, { name: "Lácteos" }];
 
   const categories: { id: string; name: string }[] = [];
   for (const c of categoriesData) {
@@ -200,7 +254,8 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
   }
 
   return {
-    tenantId: tenant.id,
-    ownerEmail: owner.email,
+    ownerEmail: DEMO_OWNER_EMAIL,
+    tenantSlug: DEMO_TENANT_SLUG,
+    superAdminEmail: SEED_SUPER_ADMIN_EMAIL,
   };
 }

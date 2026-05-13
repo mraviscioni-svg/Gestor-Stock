@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
+import { requireTenantSession } from "@/lib/auth/server";
 import { requireTenantManager } from "@/lib/authz";
-import { getTenantIdForRequest } from "@/lib/tenant";
 import { userCreateSchema } from "@/lib/validations";
 import { handleRouteError } from "@/lib/http";
 import { userAdminService } from "@/services/userAdmin.service";
 
 export async function GET() {
   try {
-    const session = await requireSession();
+    const session = await requireTenantSession();
     requireTenantManager(session);
-    const tenantId = getTenantIdForRequest(session);
+    const tenantId = session.tenantId;
     const data = await userAdminService.list(tenantId);
     return NextResponse.json({ data });
   } catch (e) {
@@ -20,7 +19,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await requireSession();
+    const session = await requireTenantSession();
     const body = await req.json().catch(() => null);
     const parsed = userCreateSchema.safeParse(body);
     if (!parsed.success) {

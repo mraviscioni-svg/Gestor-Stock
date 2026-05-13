@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
-import { getTenantIdForRequest } from "@/lib/tenant";
+import { requireTenantSession } from "@/lib/auth/server";
 import { activityPingSchema } from "@/lib/validations";
 import { activityService } from "@/services/activity.service";
 import { handleRouteError } from "@/lib/http";
 
 export async function POST(req: Request) {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const body = await req.json().catch(() => ({}));
     const parsed = activityPingSchema.safeParse(body);
     if (!parsed.success) {

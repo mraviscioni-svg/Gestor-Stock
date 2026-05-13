@@ -14,7 +14,7 @@ type TenantDto = {
 };
 
 export default function TenantSettingsPage() {
-  const { canManageTenant } = useTenantAdmin();
+  const { canManageTenant, tenantBasePath } = useTenantAdmin();
   const [tenant, setTenant] = useState<TenantDto | null>(null);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,7 @@ export default function TenantSettingsPage() {
     <div className="space-y-8">
       <div>
         <Link
-          href="/settings"
+          href={`${tenantBasePath}/settings`}
           className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-sky-700 hover:text-sky-800"
         >
           <ArrowLeft className="h-4 w-4" />

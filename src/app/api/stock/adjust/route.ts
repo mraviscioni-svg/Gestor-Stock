@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireSession } from "@/lib/auth/server";
-import { getTenantIdForRequest } from "@/lib/tenant";
+import { requireTenantSession } from "@/lib/auth/server";
 import { stockAdjustSchema } from "@/lib/validations";
 import { stockService } from "@/services/stock.service";
 import { handleRouteError } from "@/lib/http";
 
 export async function POST(req: Request) {
   try {
-    const session = await requireSession();
-    const tenantId = getTenantIdForRequest(session);
+    const session = await requireTenantSession();
+    const tenantId = session.tenantId;
     const body = await req.json().catch(() => null);
     const parsed = stockAdjustSchema.safeParse(body);
     if (!parsed.success) {

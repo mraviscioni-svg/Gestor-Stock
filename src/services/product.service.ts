@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { DomainError } from "@/lib/errors";
 import { mapProductToDTO, productRepository } from "@/repositories/product.repository";
 import { categoryRepository } from "@/repositories/category.repository";
+import { tenantRepository } from "@/repositories/tenant.repository";
 
 export const productService = {
   async list(tenantId: string, search?: string, includeInactive?: boolean) {
@@ -32,6 +33,13 @@ export const productService = {
       active?: boolean;
     }
   ) {
+    const tenant = await tenantRepository.findById(tenantId);
+    if (tenant?.maxProducts != null) {
+      const n = await tenantRepository.countProducts(tenantId);
+      if (n >= tenant.maxProducts) {
+        throw new DomainError("Límite de productos del plan alcanzado", "PLAN_LIMIT_PRODUCTS");
+      }
+    }
     const category = await categoryRepository.listByTenant(tenantId);
     if (!category.some((c) => c.id === input.categoryId)) {
       throw new DomainError("Categoría inválida", "INVALID_CATEGORY");

@@ -1,17 +1,15 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Activity, Boxes, CreditCard, Shield } from "lucide-react";
-import { getSessionFromCookies } from "@/lib/auth/server";
+import { requireTenantSession } from "@/lib/auth/server";
 import { dashboardService } from "@/services/dashboard.service";
 
 const money = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
 
-export default async function DashboardPage() {
-  const session = await getSessionFromCookies();
-  if (!session) {
-    redirect("/login");
-  }
+export default async function DashboardPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const session = await requireTenantSession();
   const summary = await dashboardService.getSummary(session.tenantId);
+  const base = `/t/${slug}`;
 
   const cards = [
     {
@@ -51,7 +49,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <Link
-          href="/sales"
+          href={`${base}/sales`}
           className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:bg-slate-800"
         >
           Nueva venta
@@ -87,7 +85,7 @@ export default async function DashboardPage() {
         <div className="rounded-2xl bg-white p-6 shadow-card ring-1 ring-slate-200/80">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Última venta</h2>
-            <Link href="/sales" className="text-xs font-semibold text-sky-700 hover:text-sky-800">
+            <Link href={`${base}/sales`} className="text-xs font-semibold text-sky-700 hover:text-sky-800">
               Ir a ventas
             </Link>
           </div>

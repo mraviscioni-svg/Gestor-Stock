@@ -1,11 +1,9 @@
-import type { SessionUser } from "@/types";
+import type { SessionUser, TenantSessionUser } from "@/types";
 
 /**
- * Resolves the active tenant for server-side operations.
- * MVP: always derived from the authenticated session.
- * Future: subdomain headers, impersonation, or explicit admin scope — never trust client-provided tenantId alone.
+ * Tenant activo para operaciones de API (solo tras `requireTenantSession`).
  */
-export function getTenantIdForRequest(session: SessionUser): string {
+export function getTenantIdForRequest(session: TenantSessionUser): string {
   return session.tenantId;
 }
 
@@ -13,8 +11,16 @@ export function assertTenantScope(
   session: SessionUser,
   tenantIdFromUntrustedSource: string | undefined | null
 ): void {
-  if (!tenantIdFromUntrustedSource) return;
+  if (!tenantIdFromUntrustedSource || !session.tenantId) return;
   if (tenantIdFromUntrustedSource !== session.tenantId) {
+    throw new TenantScopeError();
+  }
+}
+
+/** Valida que el slug de la URL coincide con la sesión (defensa en profundidad). */
+export function assertSlugMatchesSession(session: TenantSessionUser, urlSlug: string): void {
+  const normalized = urlSlug.trim().toLowerCase();
+  if (normalized !== session.tenantSlug) {
     throw new TenantScopeError();
   }
 }
