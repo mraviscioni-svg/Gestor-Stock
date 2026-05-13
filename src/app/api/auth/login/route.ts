@@ -32,7 +32,7 @@ export async function POST(req: Request) {
         error: "Usuario o contraseña incorrectos",
         ...(isDemoEmail
           ? {
-              hint: "Si es la primera vez en esta base, ejecutá el seed: POST /api/internal/bootstrap (con BOOTSTRAP_SECRET) o npm run db:seed apuntando a esta DATABASE_URL.",
+              hint: "Si es la primera vez en esta base, el próximo deploy en Vercel crea el usuario demo solo (build + seed). También podés: POST /api/internal/bootstrap (BOOTSTRAP_SECRET) o npm run db:seed con esta DATABASE_URL.",
             }
           : {}),
       },

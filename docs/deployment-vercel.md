@@ -20,7 +20,7 @@ Las credenciales del usuario demo están en **`src/config/demo-auth-defaults.ts`
 
 ## Build
 
-El script `build` ejecuta `prisma generate`, `prisma db push` y `next build` (tablas alineadas con el schema en cada deploy).
+El script `build` ejecuta `prisma generate`, `prisma db push`, un paso **`tsx scripts/vercel-auto-seed.ts`** (si no hay usuario demo, corre `prisma db seed`) y `next build`.
 
 ## Migraciones / datos
 

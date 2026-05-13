@@ -114,31 +114,11 @@ Para cambiar el demo, editá ese archivo y volvé a ejecutar seed/bootstrap.
 | `BOOTSTRAP_SECRET` | Solo para bootstrap vía API | ≥16 caracteres; borrálo después de usar |
 | `NEXT_PUBLIC_*` | Recomendado | `APP_ENV`, `APP_URL`, opcional `DEMO_LOGIN_HINT` |
 
-4. **Deploy.** El comando de build ejecuta `prisma db push` y crea/actualiza tablas en Neon automáticamente.
+4. **Deploy.** El build ejecuta `prisma db push` y, si **no existe** ningún usuario demo (`owner@demo.gestor.stock` / legado `owner@demo.kiosco.local`), corre **`prisma db seed`** automáticamente. No hace falta bootstrap manual en el primer deploy. Para desactivar: `VERCEL_SKIP_DEMO_SEED=1` en Vercel.
 
-5. **Cargar datos demo (usuario + productos)** — elegí **una** opción:
+5. **Opcional — re-sembrar o forzar datos:** `POST /api/internal/bootstrap` (con `BOOTSTRAP_SECRET`) o `npm run db:seed` local contra la misma `DATABASE_URL`.
 
-**A) Desde Vercel (sin PC)**  
-- Con `BOOTSTRAP_SECRET` definido en Vercel, llamá **una sola vez**:
-
-```bash
-curl -X POST "https://TU-DOMINIO.vercel.app/api/internal/bootstrap" ^
-  -H "x-bootstrap-secret: EL_MISMO_BOOTSTRAP_SECRET"
-```
-
-(PowerShell también podés usar `Invoke-WebRequest -Method POST -Headers @{ "x-bootstrap-secret" = "..." } -Uri "..."`.)
-
-- Respuesta JSON: `ownerEmail` coincide con [`demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts); la contraseña es la misma que figura ahí (y en pantalla de login).  
-- **Importante:** borrá `BOOTSTRAP_SECRET` de Vercel (o cambiálo) después de usarlo.
-
-**B) Desde tu máquina**  
-```bash
-npx prisma db push
-npm run db:seed
-```
-(con `DATABASE_URL` apuntando a la misma base que Vercel).
-
-6. Iniciá sesión en `/login` con las credenciales demo (archivo `src/config/demo-auth-defaults.ts` o texto en la propia pantalla de login).
+6. Iniciá sesión en `/login` con las credenciales de [`demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts) (también se muestran en la pantalla).
 
 Documentación ampliada: `docs/deployment-vercel.md`.
 

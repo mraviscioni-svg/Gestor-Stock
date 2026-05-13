@@ -6,7 +6,7 @@ import {
   DEMO_OWNER_PASSWORD,
   DEMO_TENANT_SLUG,
   LEGACY_DEMO_OWNER_EMAIL,
-} from "@/config/demo-auth-defaults";
+} from "../config/demo-auth-defaults";
 
 /**
  * Crea/actualiza tenant demo, usuario owner, categorías, productos y venta demo.
