@@ -30,7 +30,7 @@ SaaS **multi-tenant** para **catálogo, ventas y stock**: lector de código de b
 1. **Instalar dependencias**
 
 ```bash
-cd gestor-de-stock
+cd Gestor-Stock
 npm install
 ```
 
@@ -85,16 +85,15 @@ No usa cámara ni permisos del navegador: el lector **simula teclado**. En **Ven
 
 ## Nombre del repositorio en GitHub
 
-En GitHub el **nombre del repo** (la parte de la URL) **no puede llevar espacios**. Para “Gestor de Stock” lo habitual es usar el slug **`gestor-de-stock`** (URL: `https://github.com/mraviscioni-svg/gestor-de-stock`).
+En GitHub el **nombre del repo** (la parte de la URL) **no puede llevar espacios**. Este proyecto está publicado como **[Gestor-Stock](https://github.com/mraviscioni-svg/Gestor-Stock)** (`https://github.com/mraviscioni-svg/Gestor-Stock`).
 
-1. En GitHub: **Settings** del repo → **General** → **Repository name** → escribí `gestor-de-stock` → **Rename**.  
-2. En tu máquina, actualizá el remoto:
+Si renombrás el repo otra vez en GitHub, actualizá el remoto local:
 
 ```bash
-git remote set-url origin https://github.com/mraviscioni-svg/gestor-de-stock.git
+git remote set-url origin https://github.com/mraviscioni-svg/<NUEVO-NOMBRE>.git
 ```
 
-3. Opcional: en **Settings → General** podés completar el campo **Description** con el texto legible *Gestor de Stock* (eso sí admite espacios).
+En **Settings → General** podés usar la **Description** con el texto legible *Gestor de Stock* (admite espacios).
 
 ## Deploy en Vercel + GitHub
 
