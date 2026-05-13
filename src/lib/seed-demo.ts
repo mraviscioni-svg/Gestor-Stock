@@ -5,6 +5,7 @@ import {
   DEMO_OWNER_EMAIL,
   DEMO_OWNER_PASSWORD,
   DEMO_TENANT_SLUG,
+  LEGACY_DEMO_OWNER_EMAIL,
 } from "@/config/demo-auth-defaults";
 
 /**
@@ -24,6 +25,15 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
       slug: DEMO_TENANT_SLUG,
     },
   });
+
+  const ownerWithCanonical = await prisma.user.findUnique({ where: { email: DEMO_OWNER_EMAIL } });
+  const ownerWithLegacy = await prisma.user.findUnique({ where: { email: LEGACY_DEMO_OWNER_EMAIL } });
+  if (ownerWithLegacy && !ownerWithCanonical) {
+    await prisma.user.update({
+      where: { id: ownerWithLegacy.id },
+      data: { email: DEMO_OWNER_EMAIL },
+    });
+  }
 
   const owner = await prisma.user.upsert({
     where: { email: DEMO_OWNER_EMAIL },

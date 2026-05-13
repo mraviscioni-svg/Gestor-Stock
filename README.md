@@ -97,7 +97,7 @@ En **Settings → General** podés usar la **Description** con el texto legible 
 
 ### Credenciales demo (en la DB, no en `.env`)
 
-Definidas en código en [`src/config/demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts). Tras `npm run db:seed` o `POST /api/internal/bootstrap`, el login usa ese email y contraseña; en la base solo existe el **hash** de la clave.
+Definidas en código en [`src/config/demo-auth-defaults.ts`](src/config/demo-auth-defaults.ts). Tras `npm run db:seed` o `POST /api/internal/bootstrap`, el login usa ese email y contraseña; en la base solo existe el **hash** de la clave. Bases sembradas antes pueden tener aún `owner@demo.kiosco.local` — el login lo acepta y el seed migra el email al canónico.
 
 Para cambiar el demo, editá ese archivo y volvé a ejecutar seed/bootstrap.
 

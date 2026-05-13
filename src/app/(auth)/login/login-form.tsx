@@ -31,7 +31,10 @@ export function LoginForm() {
     const data = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
-      setError(typeof data.error === "string" ? data.error : "No se pudo iniciar sesión");
+      const base =
+        typeof data.error === "string" ? data.error : "No se pudo iniciar sesión";
+      const hint = typeof data.hint === "string" ? data.hint : null;
+      setError(hint ? `${base}\n\n${hint}` : base);
       return;
     }
     router.push(next);
@@ -81,7 +84,7 @@ export function LoginForm() {
             />
           </div>
           {error ? (
-            <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-100">
+            <p className="whitespace-pre-line rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-100">
               {error}
             </p>
           ) : null}
