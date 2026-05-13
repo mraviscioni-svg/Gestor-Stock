@@ -61,9 +61,19 @@ export async function POST(req: Request) {
       tenantId: user.tenantId,
       role: user.role,
     });
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("[login] signSessionToken", e);
+    const reason = e instanceof Error ? e.message : String(e);
+    const secretLen = process.env.JWT_SECRET?.trim().length ?? 0;
+    const missingJwt = secretLen < 16 || reason.includes("JWT_SECRET");
     return NextResponse.json(
-      { error: "Error de configuración del servidor (JWT_SECRET). Revisá variables en Vercel." },
+      {
+        error: "No se pudo crear la sesión (JWT).",
+        hint: missingJwt
+          ? `JWT_SECRET no llega al servidor o tiene menos de 16 caracteres (longitud detectada: ${secretLen}). En Vercel: Settings → Environment Variables → JWT_SECRET debe tener tildado el entorno de ESTE deploy (Preview si la URL es de preview, Production si es producción). Guardá y hacé Redeploy sin caché.`
+          : `Fallo al firmar el token (${reason.slice(0, 120)}). Probá Redeploy sin caché.`,
+      },
       { status: 503 }
     );
   }

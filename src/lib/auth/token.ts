@@ -5,7 +5,8 @@ import type { SessionUser } from "@/types";
 export const SESSION_COOKIE = "kiosco_session";
 
 function getJwtSecretBytes(): Uint8Array {
-  const secret = process.env.JWT_SECRET;
+  const raw = process.env.JWT_SECRET;
+  const secret = typeof raw === "string" ? raw.trim() : "";
   if (!secret || secret.length < 16) {
     throw new Error("JWT_SECRET must be set and at least 16 characters.");
   }
@@ -15,7 +16,7 @@ function getJwtSecretBytes(): Uint8Array {
 export async function signSessionToken(user: SessionUser): Promise<string> {
   return new SignJWT({
     tid: user.tenantId,
-    role: user.role,
+    role: String(user.role),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.userId)
@@ -26,7 +27,8 @@ export async function signSessionToken(user: SessionUser): Promise<string> {
 
 export async function verifySessionToken(token: string): Promise<SessionUser | null> {
   try {
-    const secret = process.env.JWT_SECRET;
+    const raw = process.env.JWT_SECRET;
+    const secret = typeof raw === "string" ? raw.trim() : "";
     if (!secret || secret.length < 16) return null;
     const key = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, key);
