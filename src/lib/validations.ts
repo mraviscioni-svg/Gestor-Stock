@@ -16,16 +16,35 @@ export const productCreateSchema = z.object({
 
 export const productPutSchema = productCreateSchema.partial();
 
-export const saleCreateSchema = z.object({
+export const saleCreateSchema = z
+  .object({
+    mode: z.enum(["immediate", "deferred"]).default("immediate"),
+    paymentMethod: paymentMethodSchema.optional(),
+    items: z
+      .array(
+        z.object({
+          productId: z.string().min(1),
+          quantity: z.coerce.number().int().positive(),
+        })
+      )
+      .min(1),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mode === "immediate" && data.paymentMethod === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Medio de pago requerido para venta inmediata",
+        path: ["paymentMethod"],
+      });
+    }
+  });
+
+export const saleCloseSchema = z.object({
   paymentMethod: paymentMethodSchema,
-  items: z
-    .array(
-      z.object({
-        productId: z.string().min(1),
-        quantity: z.coerce.number().int().positive(),
-      })
-    )
-    .min(1),
+});
+
+export const activityPingSchema = z.object({
+  page: z.string().max(200).optional(),
 });
 
 export const stockAdjustSchema = z.object({

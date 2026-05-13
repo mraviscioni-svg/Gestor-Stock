@@ -2,29 +2,29 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import {
   Boxes,
   Building2,
+  Clock,
+  History,
   LayoutDashboard,
   LogOut,
+  Radio,
   ScanLine,
   ShoppingBasket,
   Sparkles,
+  Store,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTenantAdmin } from "@/components/layout/TenantAdminContext";
 
-const mainNav = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/products", label: "Productos", icon: Boxes },
-  { href: "/sales", label: "Ventas", icon: ScanLine },
-  { href: "/stock", label: "Stock", icon: ShoppingBasket },
-];
-
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userLabel, canManageTenant } = useTenantAdmin();
+  const { userLabel, canManageTenant, userRole } = useTenantAdmin();
+  const posOk = ["CASHIER", "ADMIN", "OWNER", "SUPER_ADMIN"].includes(userRole);
+  const monitorOk = ["ADMIN", "OWNER", "VIEWER", "SUPER_ADMIN"].includes(userRole);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -33,6 +33,37 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   const settingsActive = pathname === "/settings" || pathname.startsWith("/settings/");
+
+  const navItems: { href: string; label: string; icon: typeof LayoutDashboard }[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/products", label: "Productos", icon: Boxes },
+  ];
+  if (posOk) {
+    navItems.push({ href: "/sales/pos", label: "Punto de venta", icon: Store });
+  }
+  navItems.push(
+    { href: "/sales", label: "Venta simple", icon: ScanLine },
+    { href: "/sales/open", label: "Ventas abiertas", icon: Clock },
+    { href: "/sales/history", label: "Historial", icon: History },
+    { href: "/stock", label: "Stock", icon: ShoppingBasket }
+  );
+  if (monitorOk) {
+    navItems.push({ href: "/manager/live-sales", label: "Monitor en vivo", icon: Radio });
+  }
+
+  useEffect(() => {
+    function ping() {
+      void fetch("/api/activity/ping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ page: pathname }),
+      });
+    }
+    ping();
+    const t = setInterval(ping, 45_000);
+    return () => clearInterval(t);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[260px_1fr]">
@@ -51,8 +82,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:px-3 lg:pb-6">
-          {mainNav.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          {navItems.map((item) => {
+            const active =
+              pathname === item.href ||
+              (item.href !== "/dashboard" &&
+                item.href !== "/sales" &&
+                pathname.startsWith(`${item.href}/`)) ||
+              (item.href === "/sales" && pathname === "/sales");
             const Icon = item.icon;
             return (
               <Link

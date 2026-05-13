@@ -81,7 +81,16 @@ Abrí `http://localhost:3000`, ejecutá el seed y entrá en `/login` con el **us
 
 ## Scanner de código de barras (HID)
 
-No usa cámara ni permisos del navegador: el lector **simula teclado**. En **Ventas**, el campo de escaneo está siempre enfocable; al recibir **Enter**, se busca el producto por barcode vía API y se agrega al carrito. Ver `src/components/BarcodeInput.tsx`.
+No usa cámara ni permisos del navegador: el lector **simula teclado**. En **Ventas** y en **Punto de venta** (`/sales/pos`), el campo de escaneo está siempre enfocable; al recibir **Enter**, se busca el producto por barcode vía API y se agrega al carrito. Ver `src/components/BarcodeInput.tsx`.
+
+## Ventas: POS, pendientes y monitor
+
+- **Punto de venta** (`/sales/pos`): UI táctil rápida, total fijo, venta inmediata o **pendiente** (pago diferido).  
+- **Ventas abiertas** (`/sales/open`): cobrar o anular pendientes.  
+- **Historial** (`/sales/history`).  
+- **Monitor en vivo** (`/manager/live-sales`): actividad por usuario y ventas del día (polling).  
+
+Documentación detallada: [`docs/ventas-pos.md`](docs/ventas-pos.md).
 
 ## Nombre del repositorio en GitHub
 

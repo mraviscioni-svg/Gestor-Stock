@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/token";
 
-const prefixes = ["/dashboard", "/products", "/sales", "/stock", "/settings"];
+const prefixes = ["/dashboard", "/products", "/sales", "/stock", "/settings", "/manager"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -34,5 +34,7 @@ export const config = {
     "/stock",
     "/settings",
     "/settings/:path*",
+    "/manager",
+    "/manager/:path*",
   ],
 };

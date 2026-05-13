@@ -1,6 +1,6 @@
-import type { PaymentMethod, Role } from "@prisma/client";
+import type { PaymentMethod, PaymentStatus, Role, SaleStatus } from "@prisma/client";
 
-export type { PaymentMethod, Role };
+export type { PaymentMethod, Role, PaymentStatus, SaleStatus };
 
 export type SessionUser = {
   userId: string;
@@ -32,8 +32,13 @@ export type SaleLineInput = {
 export type SaleDTO = {
   id: string;
   tenantId: string;
+  userId: string | null;
+  userName: string | null;
   total: number;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus;
+  saleStatus: SaleStatus;
+  closedAt: string | null;
   createdAt: string;
   items: {
     id: string;
@@ -63,7 +68,7 @@ export type DashboardSummary = {
   lastSale: {
     id: string;
     total: number;
-    paymentMethod: PaymentMethod;
+    paymentMethod: PaymentMethod | null;
     createdAt: string;
   } | null;
   system: {

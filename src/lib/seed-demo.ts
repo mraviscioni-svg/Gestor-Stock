@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { PaymentMethod, Role, StockMovementReason } from "@prisma/client";
+import { PaymentMethod, PaymentStatus, Role, SaleStatus, StockMovementReason } from "@prisma/client";
 import { prisma } from "./prisma";
 import {
   DEMO_OWNER_EMAIL,
@@ -155,11 +155,16 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
       const unit = Number(agua.salePrice);
       const lineTotal = unit * qty;
       await prisma.$transaction(async (tx) => {
+        const closed = new Date();
         const sale = await tx.sale.create({
           data: {
             tenantId: tenant.id,
+            userId: owner.id,
             total: lineTotal,
             paymentMethod: PaymentMethod.DEBIT,
+            paymentStatus: PaymentStatus.PAID,
+            saleStatus: SaleStatus.CLOSED,
+            closedAt: closed,
             items: {
               create: [
                 {

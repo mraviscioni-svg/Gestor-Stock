@@ -19,3 +19,23 @@ export function assertActorCanAssignRole(actorRole: Role, targetRole: Role): voi
   if (actorRole === Role.ADMIN && targetRole !== Role.OWNER) return;
   throw new AuthzError("Solo el dueño puede asignar el rol de dueño", 403);
 }
+
+const POS_ROLES: Role[] = [Role.CASHIER, Role.ADMIN, Role.OWNER, Role.SUPER_ADMIN];
+
+export function canUsePos(role: Role): boolean {
+  return POS_ROLES.includes(role);
+}
+
+const LIVE_MANAGER_ROLES: Role[] = [Role.ADMIN, Role.OWNER, Role.VIEWER, Role.SUPER_ADMIN];
+
+export function canViewLiveManager(role: Role): boolean {
+  return LIVE_MANAGER_ROLES.includes(role);
+}
+
+export function canViewAllSalesInTenant(role: Role): boolean {
+  return [Role.ADMIN, Role.OWNER, Role.VIEWER, Role.SUPER_ADMIN].includes(role);
+}
+
+export function canManageOthersSales(role: Role): boolean {
+  return role === Role.OWNER || role === Role.ADMIN || role === Role.SUPER_ADMIN;
+}

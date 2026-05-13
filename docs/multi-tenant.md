@@ -11,7 +11,7 @@
 1. **Toda lectura/escritura operativa** filtra por `tenantId` resuelto en servidor.  
 2. **Unicidad relativa al tenant**: barcode de producto, nombre de categoría.  
 3. **Nunca** tomar `tenantId` del cliente como fuente de verdad en operaciones sensibles. Si llega en el body/query, solo puede usarse para *cross-check* (`assertTenantScope`) contra la sesión.  
-4. **Roles** (`SUPER_ADMIN`, `OWNER`, `ADMIN`, `CASHIER`, `VIEWER`) quedan modelados; el MVP usa JWT con `role` pero aún no aplica ABAC fino en cada ruta.
+4. **Roles** (`SUPER_ADMIN`, `OWNER`, `ADMIN`, `CASHIER`, `VIEWER`): el JWT incluye `role`. Las rutas de **ventas** y **monitor** aplican reglas por rol (ver `src/lib/authz.ts` y `docs/ventas-pos.md`).
 
 ## Resolución de tenant (MVP)
 

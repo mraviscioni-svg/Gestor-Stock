@@ -2,7 +2,10 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export type SaleWithItems = Prisma.SaleGetPayload<{
-  include: { items: { include: { product: true } } };
+  include: {
+    items: { include: { product: true } };
+    user: { select: { id: true; name: true; email: true } };
+  };
 }>;
 
 function num(d: Prisma.Decimal): number {
@@ -13,8 +16,13 @@ export function mapSaleToDTO(sale: SaleWithItems) {
   return {
     id: sale.id,
     tenantId: sale.tenantId,
+    userId: sale.userId,
+    userName: sale.user?.name ?? sale.user?.email ?? null,
     total: num(sale.total),
     paymentMethod: sale.paymentMethod,
+    paymentStatus: sale.paymentStatus,
+    saleStatus: sale.saleStatus,
+    closedAt: sale.closedAt?.toISOString() ?? null,
     createdAt: sale.createdAt.toISOString(),
     items: sale.items.map((i) => ({
       id: i.id,
@@ -27,17 +35,50 @@ export function mapSaleToDTO(sale: SaleWithItems) {
   };
 }
 
+const saleInclude = {
+  items: { include: { product: true } },
+  user: { select: { id: true, name: true, email: true } },
+} satisfies Prisma.SaleInclude;
+
 export const saleRepository = {
-  async listRecent(tenantId: string, take = 50) {
+  async findByIdInTenant(tenantId: string, saleId: string) {
+    return prisma.sale.findFirst({
+      where: { id: saleId, tenantId },
+      include: { items: { include: { product: true } } },
+    });
+  },
+
+  async listRecent(tenantId: string, take = 50, userId?: string | null) {
     return prisma.sale.findMany({
-      where: { tenantId },
+      where: {
+        tenantId,
+        ...(userId ? { userId } : {}),
+      },
       orderBy: { createdAt: "desc" },
       take,
-      include: {
-        items: {
-          include: { product: true },
-        },
+      include: saleInclude,
+    });
+  },
+
+  async listOpen(tenantId: string, userId?: string | null) {
+    return prisma.sale.findMany({
+      where: {
+        tenantId,
+        saleStatus: "OPEN",
+        paymentStatus: "PENDING",
+        ...(userId ? { userId } : {}),
       },
+      orderBy: { createdAt: "desc" },
+      include: saleInclude,
+    });
+  },
+
+  async listMyToday(tenantId: string, userId: string, start: Date) {
+    return prisma.sale.findMany({
+      where: { tenantId, userId, createdAt: { gte: start } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: saleInclude,
     });
   },
 };
