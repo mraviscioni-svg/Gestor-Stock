@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
-import { Role } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import { useTenantAdmin } from "@/components/layout/TenantAdminContext";
 import { cn } from "@/lib/utils";
 
