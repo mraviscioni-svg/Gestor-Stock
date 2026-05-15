@@ -56,7 +56,9 @@ export const stockAdjustSchema = z.object({
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  /** Slug del comercio si el mismo email existe en más de un tenant. */
+  /** Cuenta concreta si el mismo email existe en más de un comercio (sin pedir slug). */
+  userId: z.string().min(1).optional(),
+  /** @deprecated Solo compatibilidad; preferir userId. */
   tenantSlug: z.string().max(80).optional(),
   /** Si es true (p. ej. login con next=/admin), no intentar login de comercio si no hay SUPER_ADMIN con ese email. */
   platformOnly: z.boolean().optional(),

@@ -21,15 +21,11 @@ async function resolveLoginCandidates(email: string) {
 }
 
 function tenantChoices(users: LoginUser[]) {
-  const seen = new Set<string>();
-  const out: { slug: string; name: string }[] = [];
-  for (const u of users) {
-    const t = u.tenant;
-    if (!t || seen.has(t.slug)) continue;
-    seen.add(t.slug);
-    out.push({ slug: t.slug, name: t.name });
-  }
-  return out;
+  return users.map((u) => ({
+    userId: u.id,
+    tenantName: u.tenant!.name,
+    role: u.role,
+  }));
 }
 
 export async function POST(req: Request) {
@@ -38,7 +34,8 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError("Credenciales inválidas", 400);
   }
-  const { email: rawEmail, password, tenantSlug: rawSlug, platformOnly } = parsed.data;
+  const { email: rawEmail, password, userId: rawUserId, tenantSlug: rawSlug, platformOnly } =
+    parsed.data;
   const email = rawEmail.trim().toLowerCase();
   const tenantSlug =
     typeof rawSlug === "string" && rawSlug.trim() ? rawSlug.trim().toLowerCase() : undefined;
@@ -114,7 +111,15 @@ export async function POST(req: Request) {
   const candidates = await resolveLoginCandidates(email);
 
   let user: LoginUser | null = null;
-  if (tenantSlug) {
+  if (rawUserId) {
+    user = candidates.find((u) => u.id === rawUserId) ?? null;
+    if (!user) {
+      return NextResponse.json(
+        { error: "No hay una cuenta con ese email en el comercio elegido." },
+        { status: 401 }
+      );
+    }
+  } else if (tenantSlug) {
     user = candidates.find((u) => u.tenant!.slug === tenantSlug) ?? null;
     if (!user) {
       return NextResponse.json(
@@ -127,9 +132,9 @@ export async function POST(req: Request) {
   } else if (candidates.length > 1) {
     return NextResponse.json(
       {
-        error: "Ese email está en más de un comercio. Indicá el slug del comercio.",
-        code: "TENANT_SLUG_REQUIRED",
-        tenants: tenantChoices(candidates),
+        error: "Ese email está en más de un comercio. Elegí con cuál querés entrar.",
+        code: "TENANT_CHOICE_REQUIRED",
+        choices: tenantChoices(candidates),
       },
       { status: 400 }
     );

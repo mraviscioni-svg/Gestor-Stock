@@ -17,7 +17,7 @@ export const userRepository = {
   async findLoginCandidatesByEmail(email: string) {
     return prisma.user.findMany({
       where: {
-        email,
+        email: { equals: email, mode: "insensitive" },
         tenantId: { not: null },
         tenant: { status: TenantStatus.ACTIVE },
       },
