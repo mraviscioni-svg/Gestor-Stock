@@ -43,7 +43,8 @@ export async function POST(req: Request, ctx: Ctx) {
       session,
       id,
       {
-        email: parsed.data.email,
+        username: parsed.data.username,
+        email: parsed.data.email ?? null,
         password: parsed.data.password,
         name: parsed.data.name,
         role,

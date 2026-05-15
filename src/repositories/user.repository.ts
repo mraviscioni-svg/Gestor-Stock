@@ -3,21 +3,21 @@ import { prisma } from "@/lib/prisma";
 
 export const userRepository = {
   /** SUPER_ADMIN de plataforma (sin tenant). */
-  async findPlatformAdminByEmail(email: string) {
+  async findPlatformAdminByUsername(username: string) {
     return prisma.user.findFirst({
       where: {
-        email: { equals: email, mode: "insensitive" },
+        username,
         role: Role.SUPER_ADMIN,
         tenantId: null,
       },
     });
   },
 
-  /** Usuarios con este email que tienen comercio asignado y comercio activo. */
-  async findLoginCandidatesByEmail(email: string) {
+  /** Usuarios con este username que tienen comercio asignado y comercio activo. */
+  async findLoginCandidatesByUsername(username: string) {
     return prisma.user.findMany({
       where: {
-        email: { equals: email, mode: "insensitive" },
+        username,
         tenantId: { not: null },
         tenant: { status: TenantStatus.ACTIVE },
       },
@@ -25,9 +25,15 @@ export const userRepository = {
     });
   },
 
-  async findByTenantAndEmail(tenantId: string, email: string) {
+  async findByTenantAndUsername(tenantId: string, username: string) {
     return prisma.user.findUnique({
-      where: { tenantId_email: { tenantId, email } },
+      where: { tenantId_username: { tenantId, username } },
+    });
+  },
+
+  async findByTenantAndEmail(tenantId: string, email: string) {
+    return prisma.user.findFirst({
+      where: { tenantId, email },
     });
   },
 
@@ -43,6 +49,7 @@ export const userRepository = {
       orderBy: [{ role: "asc" }, { createdAt: "asc" }],
       select: {
         id: true,
+        username: true,
         email: true,
         name: true,
         role: true,
@@ -61,7 +68,8 @@ export const userRepository = {
 
   async create(data: {
     tenantId: string;
-    email: string;
+    username: string;
+    email?: string | null;
     passwordHash: string;
     name: string | null;
     role: Role;
@@ -70,7 +78,8 @@ export const userRepository = {
     return prisma.user.create({
       data: {
         tenantId: data.tenantId,
-        email: data.email,
+        username: data.username,
+        email: data.email ?? null,
         passwordHash: data.passwordHash,
         name: data.name,
         role: data.role,
@@ -78,6 +87,7 @@ export const userRepository = {
       },
       select: {
         id: true,
+        username: true,
         email: true,
         name: true,
         role: true,
@@ -96,6 +106,7 @@ export const userRepository = {
       data: { passwordHash },
       select: {
         id: true,
+        username: true,
         email: true,
         name: true,
         role: true,
@@ -122,6 +133,7 @@ export const userRepository = {
       },
       select: {
         id: true,
+        username: true,
         email: true,
         name: true,
         role: true,

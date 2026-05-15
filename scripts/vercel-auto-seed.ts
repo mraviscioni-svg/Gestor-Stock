@@ -5,26 +5,22 @@ import { execSync } from "node:child_process";
 import { PrismaClient, Role } from "@prisma/client";
 import {
   DEMO_TENANT_SLUG,
-  DEMO_OWNER_EMAIL,
-  LEGACY_DEMO_OWNER_EMAIL,
-  PLATFORM_SUPER_ADMIN_EMAIL,
+  DEMO_OWNER_USERNAME,
+  PLATFORM_SUPER_ADMIN_USERNAME,
 } from "../src/config/demo-auth-defaults";
-
-const DEMO_EMAILS = [DEMO_OWNER_EMAIL, LEGACY_DEMO_OWNER_EMAIL];
 
 async function main() {
   const prisma = new PrismaClient();
   try {
     const superN = await prisma.user.count({
-      where: { email: PLATFORM_SUPER_ADMIN_EMAIL, role: Role.SUPER_ADMIN, tenantId: null },
+      where: { username: PLATFORM_SUPER_ADMIN_USERNAME, role: Role.SUPER_ADMIN, tenantId: null },
     });
     const demoN = await prisma.user.count({
       where: {
         tenant: { slug: DEMO_TENANT_SLUG },
-        email: { in: DEMO_EMAILS },
+        username: DEMO_OWNER_USERNAME,
       },
     });
-    /** Ambos deben existir: si solo hay demo (sin SUPER_ADMIN), el seed igual debe correr. */
     if (superN > 0 && demoN > 0) {
       // eslint-disable-next-line no-console
       console.log("[vercel-auto-seed] super admin y owner demo ya presentes, omitiendo");

@@ -25,7 +25,8 @@ type TenantRow = {
 
 type UserRow = {
   id: string;
-  email: string;
+  username: string | null;
+  email: string | null;
   name: string | null;
   role: string;
   active: boolean;
@@ -88,7 +89,8 @@ export function TenantDetailClient({ tenantId }: { tenantId: string }) {
   async function createUser(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email") ?? "");
+    const username = String(fd.get("username") ?? "").trim().toLowerCase();
+    const email = String(fd.get("email") ?? "").trim();
     const password = String(fd.get("password") ?? "");
     const name = String(fd.get("name") ?? "");
     const role = String(fd.get("role") ?? "CASHIER");
@@ -97,7 +99,8 @@ export function TenantDetailClient({ tenantId }: { tenantId: string }) {
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
-        email,
+        username,
+        email: email || null,
         password,
         name: name || null,
         role,
@@ -212,7 +215,8 @@ export function TenantDetailClient({ tenantId }: { tenantId: string }) {
       <div className="rounded-2xl bg-white p-6 shadow ring-1 ring-slate-200/80">
         <h2 className="text-sm font-semibold text-slate-900">Usuarios ({users.length})</h2>
         <form onSubmit={createUser} className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <input name="email" type="email" required placeholder="email" className="rounded-xl border px-3 py-2 text-sm" />
+          <input name="username" type="text" required placeholder="usuario" className="rounded-xl border px-3 py-2 text-sm font-mono" />
+          <input name="email" type="email" placeholder="email (opcional)" className="rounded-xl border px-3 py-2 text-sm" />
           <input name="password" type="password" required placeholder="contraseña" className="rounded-xl border px-3 py-2 text-sm" />
           <input name="name" placeholder="nombre" className="rounded-xl border px-3 py-2 text-sm" />
           <select name="role" className="rounded-xl border px-3 py-2 text-sm">
@@ -229,7 +233,8 @@ export function TenantDetailClient({ tenantId }: { tenantId: string }) {
           {users.map((u) => (
             <li key={u.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span>
-                <span className="font-medium">{u.email}</span>
+                <span className="font-medium font-mono">{u.username}</span>
+                {u.email ? <span className="ml-2 text-slate-500">{u.email}</span> : null}
                 <span className="ml-2 text-xs text-slate-500">{u.role}</span>
               </span>
               <span className={u.active ? "text-emerald-700" : "text-slate-400"}>

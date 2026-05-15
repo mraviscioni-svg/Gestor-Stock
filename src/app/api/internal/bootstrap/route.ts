@@ -24,8 +24,8 @@ export async function POST() {
     return NextResponse.json({
       ok: true,
       message: "Seed aplicado. Super admin y tenant demo listos (credenciales en demo-auth-defaults.ts).",
-      ownerEmail: out.ownerEmail,
-      superAdminEmail: out.superAdminEmail,
+      ownerUsername: out.ownerUsername,
+      superAdminUsername: out.superAdminUsername,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Error al ejecutar seed";

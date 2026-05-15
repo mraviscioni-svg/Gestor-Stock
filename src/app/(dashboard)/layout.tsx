@@ -23,7 +23,7 @@ export default async function DashboardGroupLayout({ children }: { children: Rea
 
   const dbUser = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { active: true, email: true, name: true, role: true, tenantId: true },
+    select: { active: true, username: true, email: true, name: true, role: true, tenantId: true },
   });
 
   if (!dbUser || dbUser.tenantId !== session.tenantId) {
@@ -45,7 +45,7 @@ export default async function DashboardGroupLayout({ children }: { children: Rea
     redirect("/login");
   }
 
-  const userLabel = dbUser.name?.trim() || dbUser.email;
+  const userLabel = dbUser.name?.trim() || dbUser.username || dbUser.email || "Usuario";
   const manage = canManageTenant(dbUser.role);
 
   return (

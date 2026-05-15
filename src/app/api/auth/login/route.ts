@@ -7,7 +7,7 @@ import { userRepository } from "@/repositories/user.repository";
 import { jsonError, getClientIp } from "@/lib/http";
 import { auditService, AUDIT_ACTIONS } from "@/services/audit.service";
 
-type LoginUser = Awaited<ReturnType<typeof userRepository.findLoginCandidatesByEmail>>[number];
+type LoginUser = Awaited<ReturnType<typeof userRepository.findLoginCandidatesByUsername>>[number];
 
 function dedupeById(users: LoginUser[]) {
   const map = new Map<string, LoginUser>();
@@ -15,9 +15,9 @@ function dedupeById(users: LoginUser[]) {
   return [...map.values()];
 }
 
-async function resolveLoginCandidates(email: string) {
-  const primary = await userRepository.findLoginCandidatesByEmail(email);
-  return dedupeById(primary).filter((u) => u.tenantId && u.tenant);
+async function resolveLoginCandidates(username: string) {
+  const primary = await userRepository.findLoginCandidatesByUsername(username);
+  return dedupeById(primary).filter((u) => u.tenantId && u.tenant && u.username);
 }
 
 function tenantChoices(users: LoginUser[]) {
@@ -34,15 +34,11 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return jsonError("Credenciales inválidas", 400);
   }
-  const { email: rawEmail, password, userId: rawUserId, tenantSlug: rawSlug, platformOnly } =
-    parsed.data;
-  const email = rawEmail.trim().toLowerCase();
-  const tenantSlug =
-    typeof rawSlug === "string" && rawSlug.trim() ? rawSlug.trim().toLowerCase() : undefined;
+  const { username, password, userId: rawUserId, platformOnly } = parsed.data;
 
   const ip = getClientIp(req);
 
-  const platformAdmin = await userRepository.findPlatformAdminByEmail(email);
+  const platformAdmin = await userRepository.findPlatformAdminByUsername(username);
   if (platformAdmin) {
     const ok = await bcrypt.compare(password, platformAdmin.passwordHash);
     if (!ok) {
@@ -82,7 +78,7 @@ export async function POST(req: Request) {
       redirectTo: "/admin",
       user: {
         id: platformAdmin.id,
-        email: platformAdmin.email,
+        username: platformAdmin.username,
         name: platformAdmin.name,
         role: platformAdmin.role,
       },
@@ -100,30 +96,22 @@ export async function POST(req: Request) {
   if (platformOnly) {
     return NextResponse.json(
       {
-        error: "No existe un administrador de plataforma con ese email.",
+        error: "No existe un administrador de plataforma con ese usuario.",
         code: "PLATFORM_USER_NOT_FOUND",
-        hint: "El seed crea `admin@gestor.platform` (ver `src/config/demo-auth-defaults.ts`). Si la base está vacía: redeploy (el build corre seed) o `POST /api/internal/bootstrap` una vez mientras no exista SUPER_ADMIN.",
+        hint: "El seed crea el usuario `admin` (ver `src/config/demo-auth-defaults.ts`). Si la base está vacía: redeploy o `POST /api/internal/bootstrap`.",
       },
       { status: 404 }
     );
   }
 
-  const candidates = await resolveLoginCandidates(email);
+  const candidates = await resolveLoginCandidates(username);
 
   let user: LoginUser | null = null;
   if (rawUserId) {
     user = candidates.find((u) => u.id === rawUserId) ?? null;
     if (!user) {
       return NextResponse.json(
-        { error: "No hay una cuenta con ese email en el comercio elegido." },
-        { status: 401 }
-      );
-    }
-  } else if (tenantSlug) {
-    user = candidates.find((u) => u.tenant!.slug === tenantSlug) ?? null;
-    if (!user) {
-      return NextResponse.json(
-        { error: "No hay usuario con ese email en el comercio indicado." },
+        { error: "No hay una cuenta con ese usuario en el comercio elegido." },
         { status: 401 }
       );
     }
@@ -132,7 +120,7 @@ export async function POST(req: Request) {
   } else if (candidates.length > 1) {
     return NextResponse.json(
       {
-        error: "Ese email está en más de un comercio. Elegí con cuál querés entrar.",
+        error: "Ese usuario está en más de un comercio. Elegí con cuál querés entrar.",
         code: "TENANT_CHOICE_REQUIRED",
         choices: tenantChoices(candidates),
       },
@@ -189,12 +177,15 @@ export async function POST(req: Request) {
     ip,
   });
 
-  const redirectTo = "/dashboard";
-
   const res = NextResponse.json({
     ok: true,
-    redirectTo,
-    user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    redirectTo: "/dashboard",
+    user: {
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+    },
     tenantId: user.tenantId,
     tenantSlug: user.tenant.slug,
   });

@@ -13,7 +13,8 @@ function toRole(r: "OWNER" | "ADMIN" | "CASHIER" | "VIEWER"): Role {
 
 function serializeUser(u: {
   id: string;
-  email: string;
+  username: string | null;
+  email: string | null;
   name: string | null;
   role: Role;
   active: boolean;
@@ -22,6 +23,7 @@ function serializeUser(u: {
 }) {
   return {
     id: u.id,
+    username: u.username,
     email: u.email,
     name: u.name,
     role: u.role,
@@ -40,7 +42,8 @@ export const userAdminService = {
   async create(
     session: TenantSessionUser,
     input: {
-      email: string;
+      username: string;
+      email?: string | null;
       password: string;
       name?: string | null;
       role: "OWNER" | "ADMIN" | "CASHIER" | "VIEWER";
@@ -56,18 +59,21 @@ export const userAdminService = {
         throw new DomainError("Límite de usuarios del plan alcanzado", "PLAN_LIMIT_USERS");
       }
     }
-    const email = input.email;
-    const existing = await userRepository.findByTenantAndEmail(session.tenantId, email);
+    const username = input.username;
+    const existing = await userRepository.findByTenantAndUsername(session.tenantId, username);
     if (existing) {
-      throw new DomainError("Ese email ya está registrado", "EMAIL_TAKEN");
+      throw new DomainError("Ese usuario ya está registrado en el comercio", "USERNAME_TAKEN");
     }
     const passwordHash = await bcrypt.hash(input.password, 12);
     const name =
-      input.name === undefined || input.name === null
+      input.name === undefined || input.name === null ? null : input.name.trim() || null;
+    const email =
+      input.email === undefined || input.email === null || input.email === ""
         ? null
-        : input.name.trim() || null;
+        : input.email.trim().toLowerCase();
     const created = await userRepository.create({
       tenantId: session.tenantId,
+      username,
       email,
       passwordHash,
       name,
@@ -80,7 +86,7 @@ export const userAdminService = {
       action: AUDIT_ACTIONS.USER_CREATED,
       entityType: "User",
       entityId: created.id,
-      metadata: { email: created.email, role: created.role },
+      metadata: { username: created.username, role: created.role },
     });
     return serializeUser(created);
   },

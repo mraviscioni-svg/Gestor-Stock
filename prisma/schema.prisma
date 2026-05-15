@@ -84,7 +84,10 @@ model Tenant {
 
 model User {
   id           String   @id @default(cuid())
-  email        String
+  /** Usuario para iniciar sesión (único por comercio). */
+  username     String?
+  /** Contacto opcional; no se usa en el login. */
+  email        String?
   passwordHash String
   name         String?
   role         Role     @default(CASHIER)
@@ -98,8 +101,9 @@ model User {
   sales          Sale[]
   activities     UserActivity[]
 
-  @@unique([tenantId, email])
+  @@unique([tenantId, username])
   @@index([tenantId])
+  @@index([username])
 }
 
 model Category {

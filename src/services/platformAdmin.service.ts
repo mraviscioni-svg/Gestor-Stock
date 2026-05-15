@@ -233,7 +233,13 @@ export const platformAdminService = {
   async createUser(
     actor: SessionUser,
     tenantId: string,
-    input: { email: string; password: string; name?: string | null; role: Role },
+    input: {
+      username: string;
+      email?: string | null;
+      password: string;
+      name?: string | null;
+      role: Role;
+    },
     ip?: string | null
   ) {
     await this.getTenant(tenantId);
@@ -248,14 +254,19 @@ export const platformAdminService = {
     if (input.role === Role.SUPER_ADMIN) {
       throw new DomainError("Rol inválido en comercio", "INVALID_ROLE");
     }
-    const email = input.email.trim().toLowerCase();
-    const existing = await userRepository.findByTenantAndEmail(tenantId, email);
-    if (existing) throw new DomainError("Ese email ya está registrado", "EMAIL_TAKEN");
+    const username = input.username;
+    const existing = await userRepository.findByTenantAndUsername(tenantId, username);
+    if (existing) throw new DomainError("Ese usuario ya está registrado", "USERNAME_TAKEN");
 
     const passwordHash = await bcrypt.hash(input.password, 12);
     const name = input.name === undefined || input.name === null ? null : input.name.trim() || null;
+    const email =
+      input.email === undefined || input.email === null || input.email === ""
+        ? null
+        : input.email.trim().toLowerCase();
     const created = await userRepository.create({
       tenantId,
+      username,
       email,
       passwordHash,
       name,
@@ -269,7 +280,7 @@ export const platformAdminService = {
       action: AUDIT_ACTIONS.USER_CREATED,
       entityType: "User",
       entityId: created.id,
-      metadata: { tenantId, email: created.email, role: created.role },
+      metadata: { tenantId, username: created.username, role: created.role },
       ip: ip ?? null,
     });
 

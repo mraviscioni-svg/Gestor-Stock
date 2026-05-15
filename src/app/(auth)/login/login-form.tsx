@@ -13,7 +13,7 @@ export function LoginForm() {
   const next = searchParams.get("next") ?? "/dashboard";
   const isAdminLogin = typeof next === "string" && next.includes("/admin");
   const reason = searchParams.get("reason");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [tenantChoices, setTenantChoices] = useState<TenantChoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function LoginForm() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email,
+        username,
         password,
         ...(overrideUserId ? { userId: overrideUserId } : {}),
         ...(isAdminLogin ? { platformOnly: true } : {}),
@@ -80,7 +80,7 @@ export function LoginForm() {
           <Wrapper>
             <h1 className="text-lg font-semibold text-slate-900">Bienvenido</h1>
             <p className="text-sm text-slate-500">
-              Ingresá con tu email y contraseña. Tu comercio se asigna automáticamente al iniciar sesión.
+              Ingresá con tu usuario y contraseña. Tu comercio se asigna automáticamente al iniciar sesión.
             </p>
           </Wrapper>
         </Wrapper>
@@ -92,20 +92,20 @@ export function LoginForm() {
             </p>
           ) : null}
           <Wrapper>
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Usuario</label>
             <input
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
-              type="email"
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
+              type="text"
               autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </Wrapper>
           {isAdminLogin ? (
             <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
-              Acceso a la plataforma: usuario <span className="font-semibold">SUPER_ADMIN</span> (por defecto{" "}
-              <span className="font-mono">admin@gestor.platform</span>).
+              Acceso a la plataforma: usuario <span className="font-mono font-semibold">admin</span> (SUPER_ADMIN del
+              seed).
             </p>
           ) : null}
           {tenantChoices && tenantChoices.length > 0 ? (

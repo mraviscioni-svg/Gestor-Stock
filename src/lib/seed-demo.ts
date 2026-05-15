@@ -9,13 +9,45 @@ import {
 } from "@prisma/client";
 import { prisma } from "./prisma";
 import {
+  DEMO_CASHIER_USERNAME,
   DEMO_OWNER_EMAIL,
   DEMO_OWNER_PASSWORD,
+  DEMO_OWNER_USERNAME,
   DEMO_TENANT_SLUG,
   LEGACY_DEMO_OWNER_EMAIL,
   PLATFORM_SUPER_ADMIN_EMAIL,
   PLATFORM_SUPER_ADMIN_PASSWORD,
+  PLATFORM_SUPER_ADMIN_USERNAME,
 } from "../config/demo-auth-defaults";
+import { normalizeUsername } from "./auth/username";
+
+/** Asigna username a filas antiguas que solo tenían email. */
+async function backfillUsernamesFromEmail() {
+  const rows = await prisma.user.findMany({
+    where: { username: null },
+    select: { id: true, email: true, tenantId: true },
+  });
+  for (const row of rows) {
+    if (!row.email) continue;
+    const base =
+      normalizeUsername(row.email.split("@")[0] || "user").replace(/[^a-z0-9._-]/g, "") || "user";
+    let candidate = base;
+    let n = 0;
+    for (;;) {
+      const clash = await prisma.user.findFirst({
+        where: {
+          tenantId: row.tenantId,
+          username: candidate,
+          NOT: { id: row.id },
+        },
+      });
+      if (!clash) break;
+      n += 1;
+      candidate = `${base}${n}`;
+    }
+    await prisma.user.update({ where: { id: row.id }, data: { username: candidate } });
+  }
+}
 
 /**
  * Seed profesional: SUPER_ADMIN de plataforma, tenant demo, owner, cajero, catálogo, venta demo.
@@ -24,18 +56,27 @@ import {
 export async function runDemoSeed(options?: { disconnect?: boolean }) {
   const shouldDisconnect = options?.disconnect ?? false;
 
+  await backfillUsernamesFromEmail();
+
   const superHash = await bcrypt.hash(PLATFORM_SUPER_ADMIN_PASSWORD, 12);
   const existingSuper = await prisma.user.findFirst({
-    where: { email: PLATFORM_SUPER_ADMIN_EMAIL, role: Role.SUPER_ADMIN, tenantId: null },
+    where: { username: PLATFORM_SUPER_ADMIN_USERNAME, role: Role.SUPER_ADMIN, tenantId: null },
   });
   if (existingSuper) {
     await prisma.user.update({
       where: { id: existingSuper.id },
-      data: { passwordHash: superHash, active: true, name: "Platform Admin" },
+      data: {
+        passwordHash: superHash,
+        active: true,
+        name: "Platform Admin",
+        username: PLATFORM_SUPER_ADMIN_USERNAME,
+        email: PLATFORM_SUPER_ADMIN_EMAIL,
+      },
     });
   } else {
     await prisma.user.create({
       data: {
+        username: PLATFORM_SUPER_ADMIN_USERNAME,
         email: PLATFORM_SUPER_ADMIN_EMAIL,
         passwordHash: superHash,
         role: Role.SUPER_ADMIN,
@@ -64,29 +105,31 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
     },
   });
 
-  const ownerWithCanonical = await prisma.user.findUnique({
-    where: { tenantId_email: { tenantId: tenant.id, email: DEMO_OWNER_EMAIL } },
+  const ownerWithCanonical = await prisma.user.findFirst({
+    where: { tenantId: tenant.id, email: DEMO_OWNER_EMAIL },
   });
-  const ownerWithLegacy = await prisma.user.findUnique({
-    where: { tenantId_email: { tenantId: tenant.id, email: LEGACY_DEMO_OWNER_EMAIL } },
+  const ownerWithLegacy = await prisma.user.findFirst({
+    where: { tenantId: tenant.id, email: LEGACY_DEMO_OWNER_EMAIL },
   });
   if (ownerWithLegacy && !ownerWithCanonical) {
     await prisma.user.update({
       where: { id: ownerWithLegacy.id },
-      data: { email: DEMO_OWNER_EMAIL },
+      data: { email: DEMO_OWNER_EMAIL, username: DEMO_OWNER_USERNAME },
     });
   }
 
   const owner = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: DEMO_OWNER_EMAIL } },
+    where: { tenantId_username: { tenantId: tenant.id, username: DEMO_OWNER_USERNAME } },
     update: {
       passwordHash,
       role: Role.OWNER,
       tenantId: tenant.id,
       name: "Dueño Demo",
       active: true,
+      email: DEMO_OWNER_EMAIL,
     },
     create: {
+      username: DEMO_OWNER_USERNAME,
       email: DEMO_OWNER_EMAIL,
       passwordHash,
       role: Role.OWNER,
@@ -96,13 +139,19 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
     },
   });
 
-  const cashierEmail = "cajero@demo.gestor.stock";
   const cashierHash = await bcrypt.hash(DEMO_OWNER_PASSWORD, 12);
   await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: tenant.id, email: cashierEmail } },
-    update: { passwordHash: cashierHash, role: Role.CASHIER, active: true, name: "Cajero Demo" },
+    where: { tenantId_username: { tenantId: tenant.id, username: DEMO_CASHIER_USERNAME } },
+    update: {
+      passwordHash: cashierHash,
+      role: Role.CASHIER,
+      active: true,
+      name: "Cajero Demo",
+      email: "cajero@demo.gestor.stock",
+    },
     create: {
-      email: cashierEmail,
+      username: DEMO_CASHIER_USERNAME,
+      email: "cajero@demo.gestor.stock",
       passwordHash: cashierHash,
       role: Role.CASHIER,
       tenantId: tenant.id,
@@ -249,8 +298,8 @@ export async function runDemoSeed(options?: { disconnect?: boolean }) {
   }
 
   return {
-    ownerEmail: DEMO_OWNER_EMAIL,
+    ownerUsername: DEMO_OWNER_USERNAME,
     tenantSlug: DEMO_TENANT_SLUG,
-    superAdminEmail: PLATFORM_SUPER_ADMIN_EMAIL,
+    superAdminUsername: PLATFORM_SUPER_ADMIN_USERNAME,
   };
 }

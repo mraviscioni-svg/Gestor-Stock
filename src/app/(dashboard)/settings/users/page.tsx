@@ -10,7 +10,8 @@ import { cn } from "@/lib/utils";
 
 type UserRow = {
   id: string;
-  email: string;
+  username: string | null;
+  email: string | null;
   name: string | null;
   role: Role;
   active: boolean;
@@ -33,6 +34,7 @@ export default function UsersSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [createUsername, setCreateUsername] = useState("");
   const [createEmail, setCreateEmail] = useState("");
   const [createPassword, setCreatePassword] = useState("");
   const [createName, setCreateName] = useState("");
@@ -84,7 +86,8 @@ export default function UsersSettingsPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: createEmail,
+        username: createUsername.trim().toLowerCase(),
+        email: createEmail.trim() || null,
         password: createPassword,
         name: createName.trim() || null,
         role: createRole,
@@ -99,6 +102,7 @@ export default function UsersSettingsPage() {
     const u = body.data as UserRow;
     setRows((prev) => [...prev, u]);
     setShowCreate(false);
+    setCreateUsername("");
     setCreateEmail("");
     setCreatePassword("");
     setCreateName("");
@@ -127,8 +131,8 @@ export default function UsersSettingsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Equipo</p>
           <h1 className="text-2xl font-semibold text-slate-900">Usuarios</h1>
           <p className="text-sm text-slate-600">
-            El email es único por comercio (mismo email puede existir en otro tenant con otro slug). Sesión
-            actual: <span className="font-medium">{userLabel}</span>
+            El nombre de usuario es único en este comercio. Sesión actual:{" "}
+            <span className="font-medium">{userLabel}</span>
           </p>
         </div>
         <button
@@ -148,11 +152,23 @@ export default function UsersSettingsPage() {
         >
           <p className="text-sm font-semibold text-slate-900">Alta de usuario</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Usuario</label>
+              <input
+                type="text"
+                required
+                minLength={3}
+                pattern="[a-zA-Z0-9._-]+"
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
+                value={createUsername}
+                onChange={(e) => setCreateUsername(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email (opcional)</label>
               <input
                 type="email"
-                required
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none ring-sky-500/30 focus:border-sky-500 focus:ring-4"
                 value={createEmail}
                 onChange={(e) => setCreateEmail(e.target.value)}
@@ -236,8 +252,9 @@ export default function UsersSettingsPage() {
               {rows.map((u) => (
                 <tr key={u.id} className={cn(!u.active && "bg-slate-50/80 text-slate-500")}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{u.name || u.email}</p>
-                    <p className="text-xs text-slate-500">{u.email}</p>
+                    <p className="font-medium text-slate-900">{u.name || u.username || "—"}</p>
+                    <p className="font-mono text-xs text-sky-800">{u.username}</p>
+                    {u.email ? <p className="text-xs text-slate-500">{u.email}</p> : null}
                     <p className="mt-1 text-xs text-slate-500 sm:hidden">{roleLabels[u.role] ?? u.role}</p>
                   </td>
                   <td className="hidden px-4 py-3 sm:table-cell">

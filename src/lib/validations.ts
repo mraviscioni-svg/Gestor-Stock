@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { PaymentMethod, TenantStatus } from "@prisma/client";
+import { usernameFieldSchema } from "@/lib/auth/username";
 
 export const paymentMethodSchema = z.nativeEnum(PaymentMethod);
 
@@ -54,13 +55,11 @@ export const stockAdjustSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(1).max(32).transform((u) => u.trim().toLowerCase()),
   password: z.string().min(1),
-  /** Cuenta concreta si el mismo email existe en más de un comercio (sin pedir slug). */
+  /** Cuenta concreta si el mismo username existe en más de un comercio. */
   userId: z.string().min(1).optional(),
-  /** @deprecated Solo compatibilidad; preferir userId. */
-  tenantSlug: z.string().max(80).optional(),
-  /** Si es true (p. ej. login con next=/admin), no intentar login de comercio si no hay SUPER_ADMIN con ese email. */
+  /** Si es true (p. ej. login con next=/admin), no intentar login de comercio. */
   platformOnly: z.boolean().optional(),
 });
 
@@ -71,7 +70,8 @@ export const tenantUpdateSchema = z.object({
 });
 
 export const userCreateSchema = z.object({
-  email: z.string().email().transform((e) => e.trim().toLowerCase()),
+  username: usernameFieldSchema,
+  email: z.union([z.string().email(), z.literal("")]).optional().transform((v) => (v === "" ? null : v ?? null)),
   password: z.string().min(8).max(128),
   name: z.string().max(120).optional().nullable(),
   role: tenantRoleEnum.default("CASHIER"),
@@ -106,7 +106,8 @@ export const adminTenantPatchSchema = z.object({
 const platformTenantRoleEnum = z.enum(["OWNER", "ADMIN", "CASHIER", "VIEWER"]);
 
 export const adminUserCreateSchema = z.object({
-  email: z.string().email().transform((e) => e.trim().toLowerCase()),
+  username: usernameFieldSchema,
+  email: z.union([z.string().email(), z.literal("")]).optional().transform((v) => (v === "" ? null : v ?? null)),
   password: z.string().min(8).max(128),
   name: z.string().max(120).optional().nullable(),
   role: platformTenantRoleEnum.default("CASHIER"),
